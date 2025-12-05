@@ -527,12 +527,12 @@ function formatTime(time) {
 }
 
 /**
- * Get web app URL for approval links (placeholder - needs to be implemented)
+ * Get web app URL for approval links
  */
 function getWebAppUrl() {
-  // TODO: Implement web app for handling approval clicks
-  // For now, return spreadsheet URL
-  return SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  // Get the script ID and construct web app URL
+  const scriptId = ScriptApp.getScriptId();
+  return `https://script.google.com/macros/s/${scriptId}/exec`;
 }
 
 /**
