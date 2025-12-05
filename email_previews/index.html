@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Holiday Application Email Templates - Preview Index</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1565C0;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .email-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .email-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f8f9fa;
+            transition: transform 0.2s;
+        }
+        .email-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .email-card h3 {
+            color: #2E7D32;
+            margin-top: 0;
+        }
+        .email-card p {
+            color: #555;
+            margin-bottom: 15px;
+        }
+        .preview-btn {
+            display: inline-block;
+            background: #1565C0;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        .preview-btn:hover {
+            background: #0d47a1;
+        }
+        .description {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #1565C0;
+        }
+        .tech-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Holiday Application Email Templates</h1>
+        
+        <div class="description">
+            <h3>About These Templates</h3>
+            <p>These HTML email templates were extracted from the <strong>EmailSystem.gs</strong> Google Apps Script file. Each template represents a different type of notification sent by the Holiday Application System:</p>
+            <ul>
+                <li><strong>Manager emails</strong> - Require action (approve/reject)</li>
+                <li><strong>HR emails</strong> - For records and monitoring</li>
+                <li><strong>Employee emails</strong> - Confirmations and decisions</li>
+                <li><strong>Error emails</strong> - System error notifications</li>
+            </ul>
+            <p>All variables from the original Google Apps Script have been replaced with sample data for preview purposes.</p>
+        </div>
+
+        <div class="email-grid">
+            <div class="email-card">
+                <h3>Manager Action Email</h3>
+                <p>Sent to managers when an employee submits a holiday request. Contains approve/reject buttons and full request details.</p>
+                <a href="manager_email.html" class="preview-btn" target="_blank">Preview Template</a>
+            </div>
+
+            <div class="email-card">
+                <h3>HR Notification Email</h3>
+                <p>Sent to HR department for records when a holiday request is submitted. No action required from HR.</p>
+                <a href="hr_email.html" class="preview-btn" target="_blank">Preview Template</a>
+            </div>
+
+            <div class="email-card">
+                <h3>Employee Confirmation</h3>
+                <p>Sent to employees immediately after they submit a holiday request to confirm receipt.</p>
+                <a href="employee_confirmation_email.html" class="preview-btn" target="_blank">Preview Template</a>
+            </div>
+
+            <div class="email-card">
+                <h3>Employee Decision - Approved</h3>
+                <p>Sent to employees when their manager approves their holiday request.</p>
+                <a href="employee_decision_email_approved.html" class="preview-btn" target="_blank">Preview Template</a>
+            </div>
+
+            <div class="email-card">
+                <h3>Employee Decision - Rejected</h3>
+                <p>Sent to employees when their manager rejects their holiday request.</p>
+                <a href="employee_decision_email_rejected.html" class="preview-btn" target="_blank">Preview Template</a>
+            </div>
+
+            <div class="email-card">
+                <h3>HR Decision Notification</h3>
+                <p>Sent to HR department when a manager makes a decision on a holiday request.</p>
+                <a href="hr_decision_email.html" class="preview-btn" target="_blank">Preview Template</a>
+            </div>
+
+            <div class="email-card">
+                <h3>Error Notification</h3>
+                <p>Sent when system errors occur during the holiday request process.</p>
+                <a href="error_notification_email.html" class="preview-btn" target="_blank">Preview Template</a>
+            </div>
+        </div>
+
+        <div class="tech-info">
+            <h4>Technical Information</h4>
+            <p><strong>Source Files:</strong></p>
+            <ul>
+                <li><code>EmailSystem.gs</code> - Contains all email template functions</li>
+                <li><code>GlobalConfig.gs</code> - Contains styling constants and configuration</li>
+            </ul>
+            <p><strong>Variables Replaced:</strong></p>
+            <ul>
+                <li>Employee names, emails, departments</li>
+                <li>Company name (set to "Acme Corporation")</li>
+                <li>Request IDs, dates, and working days</li>
+                <li>Manager names and decision makers</li>
+                <li>All color and font constants from GlobalConfig.gs</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
