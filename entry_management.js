@@ -1,86 +1,4 @@
-/**
- * Copy entry to employee tab with typed column handling
- */
-function copyEntryToEmployeeTabold(logEntry) {
-  try {
-    const year = getYearFromDate(logEntry.visitDate);
-    const tabName = generateEmployeeTabName(logEntry.employeeName, year);
-    
-    console.log(`Copying entry to employee tab: ${tabName}`);
-    
-    const sheet = SpreadsheetApp.getActiveSpreadsheet();
-    const employeeSheet = sheet.getSheetByName(tabName);
-    
-    if (!employeeSheet) {
-      console.error(`Employee tab not found: ${tabName}`);
-      return false;
-    }
-    
-    // Find next empty row (starting from row 10)
-    const lastRow = employeeSheet.getLastRow();
-    const nextRow = Math.max(10, lastRow + 1);
-    
-    // Calculate total hours
-    const totalHours = calculateHours(logEntry.startTime, logEntry.endTime);
-    
-    // Prepare data as values (not formulas) to avoid typed column issues
-    const visitDate = new Date(logEntry.visitDate);
-    
-    // Create row data array
-    const rowData = [
-      logEntry.requestId,                                    // A: REQUEST ID
-      visitDate,                                            // B: DATE
-      'Pending',                                            // C: STATUS
-      logEntry.startTime.toString(),                        // D: TIME START
-      logEntry.endTime.toString(),                          // E: TIME END
-      parseFloat(totalHours),                               // F: TOTAL HOURS (as number)
-      logEntry.purpose.toString(),                          // G: PURPOSE
-      extractPrimaryLocation(logEntry.companies),           // H: LOCATION
-      logEntry.companies.toString(),                        // I: COMPANIES
-      logEntry.description.toString(),                      // J: DESCRIPTION
-      logEntry.reimbursement.toString(),                    // K: REIMBURSEMENT
-      ''                                                    // L: REMARKS
-    ];
-    
-    // Insert entire row at once to avoid typed column conflicts
-    try {
-      employeeSheet.getRange(nextRow, 1, 1, rowData.length).setValues([rowData]);
-      console.log(`✅ Entry copied to ${tabName} at row ${nextRow}`);
-    } catch (typedColumnError) {
-      console.error('Typed column error, trying alternative approach:', typedColumnError);
-      
-      // Alternative: Insert row by row with error handling
-      for (let col = 0; col < rowData.length; col++) {
-        try {
-          employeeSheet.getRange(nextRow, col + 1).setValue(rowData[col]);
-        } catch (cellError) {
-          console.error(`Error setting cell ${nextRow},${col + 1}:`, cellError);
-          // Skip problematic cells
-        }
-      }
-    }
-    
-    // Set up dropdown validation for Status column (C) - do this after data insertion
-    try {
-      const statusCell = employeeSheet.getRange(nextRow, 3);
-      const rule = SpreadsheetApp.newDataValidation()
-        .requireValueInList(['Pending', 'Approved', 'Rejected'])
-        .setAllowInvalid(false)
-        .build();
-      statusCell.setDataValidation(rule);
-    } catch (validationError) {
-      console.error('Error setting validation:', validationError);
-      // Continue without validation if it fails
-    }
-    
-    return true;
-    
-  } catch (error) {
-    console.error('Error copying entry to employee tab:', error);
-    console.error('Error details:', error.toString());
-    return false;
-  }
-}
+
 
 /**
  * Copy entry to employee tab with proper time formatting (FIXED)
@@ -183,35 +101,7 @@ function extractPrimaryLocation(companies) {
   }
 }
 
-/**
- * Process all pending entries and copy to employee tabs (MISSING FUNCTION)
- */
-function copyAllPendingEntries() {
-  try {
-    console.log('=== COPYING ALL PENDING ENTRIES ===');
-    
-    const pendingEntries = getPendingEntries();
-    console.log(`Found ${pendingEntries.length} pending entries to copy`);
-    
-    let successCount = 0;
-    let errorCount = 0;
-    
-    pendingEntries.forEach(entry => {
-      if (copyEntryToEmployeeTab(entry)) {
-        successCount++;
-      } else {
-        errorCount++;
-      }
-    });
-    
-    console.log(`✅ Copy complete - Success: ${successCount}, Errors: ${errorCount}`);
-    return { success: successCount, errors: errorCount };
-    
-  } catch (error) {
-    console.error('Error copying pending entries:', error);
-    return { success: 0, errors: 1 };
-  }
-}
+
 
 /**
  * Update status in Logs sheet by Request ID
@@ -653,37 +543,25 @@ function sendConfirmationEmailsButton() {
     
     console.log(`Found ${pendingConfirmations.length} entries needing confirmation`);
     
-    // Group by employee
-    const confirmationsByEmployee = groupDecisionsByEmployee(pendingConfirmations);
-    
+    // Send individual confirmation emails for each entry
     let emailsSent = 0;
     
-    // Send confirmation email to each employee
-    Object.keys(confirmationsByEmployee).forEach(employeeEmail => {
-      sendEmployeeBatchConfirmation(employeeEmail, confirmationsByEmployee[employeeEmail]);
+    pendingConfirmations.forEach(entry => {
+      sendStatusConfirmationEmail(entry.requestId, entry.status);
       emailsSent++;
     });
-    
-    // Send summary to HR
-    const emailConfig = getEmailAddresses();
-    if (emailConfig.ccHr && emailConfig.hr) {
-      sendHRBatchSummary(pendingConfirmations);
-      emailsSent++;
-    }
     
     // Mark entries as notified (add a timestamp to comments or new column)
     markEntriesAsNotified(pendingConfirmations);
     
     // Show success message
     const ui = SpreadsheetApp.getUi();
-    const employeeCount = Object.keys(confirmationsByEmployee).length;
-    const hrMessage = (emailConfig.ccHr && emailConfig.hr) ? '\nHR summary sent' : '';
     
     ui.alert(
       'Confirmation Emails Sent!', 
       `Successfully sent confirmation emails:\n\n` +
-      `• ${employeeCount} employees notified\n` +
-      `• ${pendingConfirmations.length} entries confirmed${hrMessage}`, 
+      `• ${emailsSent} emails sent\n` +
+      `• ${pendingConfirmations.length} entries confirmed`, 
       ui.ButtonSet.OK
     );
     

@@ -14,6 +14,14 @@ const WEB_APP_CONFIG = {
   DEFAULT_URL: 'https://script.google.com/macros/s/AKfycbx5NsrdoHi7rBFtlwxmTgFd6uXlHg4yYnxLEq5JFJReox6GzsybYqs2T30DFZJPs6do/exec'
 };
 
+// System Information
+const SYSTEM_INFO = {
+  VERSION: '1.0.0',
+  COMMIT_ID: 'a170613', // Update manually or use automated deployment
+  CREATED_BY: 'D.ip',
+  BUILD_DATE: '2025-12-05'
+};
+
 // Email Configuration
 const EMAIL_CONFIG = {
   DEBUG_CELL: 'B9'
@@ -375,4 +383,18 @@ function generateUniqueRequestId() {
   
   console.log('Generated unique Request ID:', requestId);
   return requestId;
+}
+
+/**
+ * Generate email footer with system information
+ */
+function getEmailFooter() {
+  return `
+    <div style="border-top: 1px solid #ddd; margin-top: 30px; padding-top: 20px; text-align: center; color: #999; font-size: 11px;">
+      <p style="margin: 0;">
+        Created by ${SYSTEM_INFO.CREATED_BY} with love ❤️<br>
+        Version ${SYSTEM_INFO.VERSION} | Build ${SYSTEM_INFO.COMMIT_ID} | ${SYSTEM_INFO.BUILD_DATE}
+      </p>
+    </div>
+  `;
 }

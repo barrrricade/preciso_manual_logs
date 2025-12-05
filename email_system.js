@@ -141,6 +141,7 @@ function createManagerApprovalEmailBody(formData, requestId, emailConfig) {
             <strong>Automated notification from ${emailConfig.company} Manual Logs</strong><br>
             This email is sent immediately when a valid employee submits a visit log
           </p>
+          ${getEmailFooter()}
         </div>
         
       </div>
@@ -290,7 +291,7 @@ function createCombinedApprovalEmailBody(entryDetails, emailConfig) {
           
           <!-- HR Information - Green -->
           <div style="background: #e8f5e8; border: 1px solid #c8e6c9; border-radius: 6px; padding: 15px; margin: 15px 0;">
-            <h4 style="margin: 0 0 10px 0; color: #2e7d32;">📋 For HR (${emailConfig.hrName}):</h4>
+            <h4 style="margin: 0 0 10px 0; color: #2e7d32;">[FOR HR] (${emailConfig.hrName}):</h4>
             <p style="margin: 0; color: #333;">
               <strong>No Action Required:</strong> This is a notification only. The visit log has been approved and recorded in the employee's activity report.
             </p>
