@@ -200,7 +200,7 @@ const REQUEST_ID_PREFIX = 'REQ-';
 // Form Field Mapping (e.values indices) - FIXED: Based on actual form data
 const FORM_FIELDS = {
   TIMESTAMP: 0,      // '05/12/2025 02:19:49'
-  EMAIL: 1,          // 'ipkinghangdesmond@gmail.com'
+  EMAIL: 1,          // '[EMPLOYEE_EMAIL]'
   // Index 2 is empty (removed employee name dropdown)
   VISIT_DATE: 3,     // '01/01/2026'
   START_TIME: 4,     // '10:10:00'

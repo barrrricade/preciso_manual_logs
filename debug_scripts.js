@@ -71,7 +71,7 @@ function testFormSubmission() {
   // Mock form submission data
   const mockFormData = [
     new Date(),                    // Timestamp
-    'june123@gmail.com',          // Email (should be valid)
+    '[TEST_EMAIL]',               // Email (should be valid)
     'June',                       // Employee name
     '2024-11-20',                 // Visit date
     '09:00',                      // Start time
@@ -100,7 +100,7 @@ function testEmployeeTabCreation() {
   const mockFormData = {
     employeeName: 'June',
     visitDate: '2025-01-15',
-    email: 'june123@gmail.com'
+    email: '[TEST_EMAIL]'
   };
   
   processEmployeeTabCreation(mockFormData);

@@ -12,7 +12,7 @@ This folder contains HTML previews of the email templates used in the Phase 2 ap
 
 ### 1. Manager Approval Email (`manager_approval_email.html`)
 - **Theme**: 🟡 Yellow (Pending)
-- **Recipient**: Manager (Charlene)
+- **Recipient**: Manager ([MANAGER_NAME])
 - **Trigger**: Immediate - when valid employee submits form
 - **Features**:
   - Single **APPROVE** button (🟢 green button)
@@ -33,7 +33,7 @@ This folder contains HTML previews of the email templates used in the Phase 2 ap
 
 ### 3. HR Notification Email (`hr_notification_email.html`)
 - **Theme**: 🟢 Green (Approved)
-- **Recipient**: HR (Jhordel) - only if `cc_hr = TRUE` in config
+- **Recipient**: HR ([HR_NAME]) - only if `cc_hr = TRUE` in config
 - **Trigger**: When manager approves the request
 - **Features**:
   - Green theme for approved status

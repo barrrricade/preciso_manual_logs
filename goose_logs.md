@@ -12,7 +12,7 @@ Building a comprehensive manual log tracking system for offline client meetings 
 2. **Google Sheets** with three main components:
    - **Config sheet**: Employee database, manager/HR emails, settings
    - **Logs sheet**: All form submissions with status tracking
-   - **Employee tabs**: Individual sheets per employee per year (e.g., "Frida 2026")
+   - **Employee tabs**: Individual sheets per employee per year (e.g., "[EMPLOYEE_NAME] 2026")
 
 3. **Email System** with automated notifications:
    - Manager notification on form submission
@@ -27,8 +27,8 @@ Building a comprehensive manual log tracking system for offline client meetings 
 ## Development Log
 
 ### 2024-12-05 - Initial Analysis & Planning
-- **COMPLETED**: Analyzed existing codebase in `/Users/desmondip/Devspace/preciso/preciso_manual_logs`
-- **COMPLETED**: Created backup of existing system to `preciso_manual_logs_backup`
+- **COMPLETED**: Analyzed existing codebase in `/path/to/project`
+- **COMPLETED**: Created backup of existing system to `project_backup`
 - **COMPLETED**: Reviewed current Google Apps Script implementation
 - **COMPLETED**: Created comprehensive project plan with 6 phases
 
@@ -116,12 +116,12 @@ Instead of building from scratch, we'll:
 ### Current Config Structure:
 ✅ **Settings Table:**
 - Company: "company"
-- Manager: Charlene (ipkinghandesmond+manager@gmail.com)  
-- HR: Jhordel (ipkinghandesmond+hr@gmail.com)
+- Manager: [MANAGER_NAME] ([MANAGER_EMAIL])  
+- HR: [HR_NAME] ([HR_EMAIL])
 - Debug mode: TRUE, CC HR: TRUE, Email time: 1800
 
 ✅ **Employee Database:**
-- June (Sales), Des (Sales), John Doe (HR), desmond (admin)
+- [EMPLOYEE1] (Sales), [EMPLOYEE2] (Sales), [EMPLOYEE3] (HR), [EMPLOYEE4] (admin)
 - Email validation ready with existing employee list
 
 ### Current Logs Structure:
@@ -157,7 +157,7 @@ User provided complete CSV exports showing exact cell positions and data structu
 #### Config Sheet Structure:
 ✅ **Settings (A:B columns):**
 - Company, manager/HR emails, debug settings
-- Manager: Charlene, HR: Jhordel
+- Manager: [MANAGER_NAME], HR: [HR_NAME]
 - Auto-approve limit: 1, Email time: 1800
 
 ✅ **Employees (F:I columns):**
@@ -176,7 +176,7 @@ User provided complete CSV exports showing exact cell positions and data structu
 - Professional header with year field
 - Comprehensive tracking table
 - Manager signature column
-- Employee tabs use same structure (June 2025 example)
+- Employee tabs use same structure ([EMPLOYEE_NAME] 2025 example)
 
 #### Request ID System:
 ✅ **Format:** REQ-1763293178124-354 (timestamp + random)
@@ -296,7 +296,7 @@ User provided complete CSV exports showing exact cell positions and data structu
 
 2. **Year Extraction Issue**:
    - Visit date showing as empty instead of '01/01/2026'
-   - Year extraction failing, should create "desmond 2026" tab
+   - Year extraction failing, should create "[EMPLOYEE_NAME] 2026" tab
    - Employee tab defaulting to current year (2025)
 
 3. **Email Debug Mode Issue**:

@@ -69,7 +69,7 @@ function createManagerApprovalEmailBody(formData, requestId, emailConfig) {
         <div style="background: linear-gradient(135deg, #ffa726, #ffb74d); color: white; padding: 25px; text-align: center;">
           <h1 style="margin: 0; font-size: 24px;">Visit Log Approval Required</h1>
           <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
-            ⏳ New submission awaiting approval
+            [PENDING] New submission awaiting approval
           </p>
         </div>
         
@@ -274,7 +274,7 @@ function createCombinedApprovalEmailBody(entryDetails, emailConfig) {
           
           <!-- Entry Details - Green border -->
           <div style="border: 1px solid #4caf50; border-radius: 8px; padding: 15px; margin: 10px 0; background: #f8fff8;">
-            <h4 style="margin: 0 0 10px 0; color: #4caf50;">📋 Approved Visit Log</h4>
+            <h4 style="margin: 0 0 10px 0; color: #4caf50;">[APPROVED] Visit Log</h4>
             <p style="margin: 5px 0;"><strong>Employee:</strong> ${entryDetails.employeeName}</p>
             <p style="margin: 5px 0;"><strong>Request Date:</strong> ${requestDateFormatted}</p>
             <p style="margin: 5px 0;"><strong>Visit Date:</strong> ${visitDateFormatted}</p>
@@ -292,8 +292,11 @@ function createCombinedApprovalEmailBody(entryDetails, emailConfig) {
           <!-- HR Information - Green -->
           <div style="background: #e8f5e8; border: 1px solid #c8e6c9; border-radius: 6px; padding: 15px; margin: 15px 0;">
             <h4 style="margin: 0 0 10px 0; color: #2e7d32;">[FOR HR] (${emailConfig.hrName}):</h4>
+            <p style="margin: 0 0 10px 0; color: #333;">
+              <strong>No Action Required:</strong> This is for reference only. There might be changes and HR should refer to the Google Sheets as source of truth.
+            </p>
             <p style="margin: 0; color: #333;">
-              <strong>No Action Required:</strong> This is a notification only. The visit log has been approved and recorded in the employee's activity report.
+              The visit log has been approved and recorded in the employee's activity report.
             </p>
           </div>
           
@@ -310,7 +313,7 @@ function createCombinedApprovalEmailBody(entryDetails, emailConfig) {
             <a href="${spreadsheetUrl}" 
                style="display: inline-block; background-color: #1976d2; color: white; padding: 12px 25px; 
                       text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
-              📊 VIEW ACTIVITY REPORT
+              [REPORT] VIEW ACTIVITY REPORT
             </a>
           </div>
         </div>
@@ -384,7 +387,7 @@ function createEmployeeConfirmationEmailBody(entryDetails, emailConfig) {
             <a href="${spreadsheetUrl}" 
                style="display: inline-block; background-color: #1976d2; color: white; padding: 12px 25px; 
                       text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
-              📊 VIEW YOUR ACTIVITY REPORT
+              [REPORT] VIEW YOUR ACTIVITY REPORT
             </a>
           </div>
           
@@ -441,7 +444,7 @@ function createHRNotificationEmailBody(entryDetails, emailConfig) {
           
           <!-- Entry Details - Green border -->
           <div style="border: 1px solid #4caf50; border-radius: 8px; padding: 15px; margin: 10px 0; background: #f8fff8;">
-            <h4 style="margin: 0 0 10px 0; color: #4caf50;">📋 Approved Visit Log</h4>
+            <h4 style="margin: 0 0 10px 0; color: #4caf50;">[APPROVED] Visit Log</h4>
             <p style="margin: 5px 0;"><strong>Employee:</strong> ${entryDetails.employeeName}</p>
             <p style="margin: 5px 0;"><strong>Date:</strong> ${visitDateFormatted}</p>
             <p style="margin: 5px 0;"><strong>Time:</strong> ${timeRange}</p>
@@ -456,7 +459,7 @@ function createHRNotificationEmailBody(entryDetails, emailConfig) {
           
           <!-- Information Notice - Green -->
           <div style="background: #e8f5e8; border: 1px solid #c8e6c9; border-radius: 6px; padding: 15px; margin: 15px 0;">
-            <h4 style="margin: 0 0 10px 0; color: #2e7d32;">ℹ️ For Your Information</h4>
+            <h4 style="margin: 0 0 10px 0; color: #2e7d32;">[INFO] For Your Information</h4>
             <p style="margin: 0; color: #333;">
               <strong>No Action Required:</strong> This is a notification only. The visit log has been approved and recorded in the employee's activity report.
             </p>
@@ -467,7 +470,7 @@ function createHRNotificationEmailBody(entryDetails, emailConfig) {
             <a href="${spreadsheetUrl}" 
                style="display: inline-block; background-color: #1976d2; color: white; padding: 12px 25px; 
                       text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
-              📊 VIEW EMPLOYEE ACTIVITY REPORT
+              [REPORT] VIEW EMPLOYEE ACTIVITY REPORT
             </a>
           </div>
           
