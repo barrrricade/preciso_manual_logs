@@ -147,34 +147,32 @@ function getOrCreateLogsSheet() {
 }
 
 /**
- * Write form data to Logs sheet - UPDATED: Match new template structure with Request_Date
+ * Write form data to Logs sheet - CORRECTED: Match actual CSV structure
  */
 function writeToLogsSheet(logsSheet, requestId, formData, isValidEmployee) {
   const status = isValidEmployee ? STATUS.PENDING : STATUS.INVALID_EMPLOYEE;
-  const requestDate = new Date(); // Current date as request date
   
-  // NEW STRUCTURE: Request_ID, Request_Date, Visit_Date, Employee_Name, Employee_Email, 
-  // Start_Time, End_Time, Total_Hours, Purpose, Location, Companies, Description, Reimbursement, Status, Remarks
+  // ACTUAL CSV STRUCTURE: Request_ID, Timestamp, Employee_Name, Employee_Email, Visit_Date,
+  // Visit_Start_Time, Visit_End_Time, Purpose, Reimbursement, Description, Companies, Status, Action_Date, Comments
   const rowData = [
     requestId,              // Request_ID
-    requestDate,            // Request_Date (current date/time)
-    formData.visitDate,     // Visit_Date
+    formData.timestamp,     // Timestamp (form submission time)
     formData.employeeName,  // Employee_Name
     formData.email,         // Employee_Email
-    formData.startTime,     // Start_Time
-    formData.endTime,       // End_Time
-    '',                     // Total_Hours (calculated later if needed)
+    formData.visitDate,     // Visit_Date
+    formData.startTime,     // Visit_Start_Time
+    formData.endTime,       // Visit_End_Time
     formData.purpose,       // Purpose
-    '',                     // Location (not in form yet)
-    formData.companies,     // Companies
-    formData.description,   // Description
     formData.reimbursement, // Reimbursement
+    formData.description,   // Description
+    formData.companies,     // Companies
     status,                 // Status
-    ''                      // Remarks (empty initially)
+    '',                     // Action_Date (empty initially)
+    ''                      // Comments (empty initially)
   ];
   
   logsSheet.appendRow(rowData);
-  console.log('Data written to Logs sheet with new structure:', rowData);
+  console.log('Data written to Logs sheet with corrected structure:', rowData);
 }
 
 /**

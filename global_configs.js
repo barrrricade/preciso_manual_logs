@@ -197,11 +197,11 @@ const FORM_FIELDS = {
   COMPANIES: 9       // 'this, that'
 };
 
-// Log Sheet Headers - UPDATED: Added Request_Date column to match template
+// Log Sheet Headers - CORRECTED: Match actual CSV structure
 const LOG_HEADERS = [
-  'Request_ID', 'Request_Date', 'Visit_Date', 'Employee_Name', 'Employee_Email',
-  'Start_Time', 'End_Time', 'Total_Hours', 'Purpose', 'Location',
-  'Companies', 'Description', 'Reimbursement', 'Status', 'Remarks'
+  'Request_ID', 'Timestamp', 'Employee_Name', 'Employee_Email', 'Visit_Date',
+  'Visit_Start_Time', 'Visit_End_Time', 'Purpose', 'Reimbursement', 'Description',
+  'Companies', 'Status', 'Action_Date', 'Comments'
 ];
 
 // Status Values

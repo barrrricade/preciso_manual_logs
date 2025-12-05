@@ -589,12 +589,9 @@ function updateRequestStatus(requestId, newStatus) {
       const cellRequestId = logsSheet.getRange(row, 1).getValue();
       
       if (cellRequestId === requestId) {
-        // Update status (column 14) and remarks with timestamp (column 15)
-        logsSheet.getRange(row, 14).setValue(newStatus);
-        const currentRemarks = logsSheet.getRange(row, 15).getValue() || '';
-        const timestamp = new Date().toLocaleString();
-        const newRemarks = currentRemarks + (currentRemarks ? '; ' : '') + `${newStatus} ${timestamp}`;
-        logsSheet.getRange(row, 15).setValue(newRemarks);
+        // Update status (column 12) and action date (column 13)
+        logsSheet.getRange(row, 12).setValue(newStatus);
+        logsSheet.getRange(row, 13).setValue(new Date());
         
         console.log(`Updated Logs sheet ${requestId} to status: ${newStatus}`);
         logsUpdated = true;
