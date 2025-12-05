@@ -81,7 +81,7 @@ function getEmailAddresses() {
 }
 
 /**
- * Get configuration value from Config sheet (UPDATED: Settings now start at A1)
+ * Get configuration value from Config sheet (UPDATED: Handle typed columns)
  */
 function getConfigValue(setting) {
   try {
@@ -90,9 +90,30 @@ function getConfigValue(setting) {
     
     if (!configSheet) return null;
     
-    // FIXED: Settings now start at A1:B13 (shifted up by 2 rows)
-    const data = configSheet.getRange('A1:B13').getValues();
+    // Try different approaches to handle typed columns
+    let data;
     
+    try {
+      // First try: Get the range as values (may fail with typed columns)
+      data = configSheet.getRange('A1:B13').getValues();
+    } catch (typedColumnError) {
+      console.log('Typed column error, trying cell-by-cell approach:', typedColumnError);
+      
+      // Second try: Read cell by cell to avoid typed column restrictions
+      data = [];
+      for (let row = 1; row <= 13; row++) {
+        try {
+          const key = configSheet.getRange(row, 1).getValue();
+          const value = configSheet.getRange(row, 2).getValue();
+          data.push([key, value]);
+        } catch (cellError) {
+          console.log(`Error reading row ${row}, skipping:`, cellError);
+          data.push(['', '']); // Add empty row to maintain indexing
+        }
+      }
+    }
+    
+    // Search for the setting
     for (let i = 0; i < data.length; i++) {
       if (data[i][0] === setting) {
         console.log(`Config value found - ${setting}: ${data[i][1]}`);
@@ -234,6 +255,68 @@ function getEmailAddresses() {
       managerName: 'Manager', hrName: 'HR', ccHr: false
     };
   }
+}
+
+/**
+ * Validate and display config status - DIAGNOSTIC FUNCTION
+ */
+function validateConfigSetup() {
+  console.log('=== CONFIG VALIDATION ===');
+  
+  // Required config keys based on your CSV
+  const requiredConfigs = [
+    'company_name', 'hr_email', 'manager_email', 'notification_enabled',
+    'auto_approve_limit', 'working_days_only', 'automation_email', 
+    'debug_mode', 'manager_name', 'hr_name', 'cc_hr'
+  ];
+  
+  const foundConfigs = {};
+  const missingConfigs = [];
+  
+  // Test each required config
+  requiredConfigs.forEach(configKey => {
+    const value = getConfigValue(configKey);
+    if (value !== null) {
+      foundConfigs[configKey] = value;
+      console.log(`✅ ${configKey}: ${value}`);
+    } else {
+      missingConfigs.push(configKey);
+      console.log(`❌ ${configKey}: NOT FOUND`);
+    }
+  });
+  
+  // Test employee data
+  console.log('\n=== EMPLOYEE VALIDATION ===');
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet();
+    const configSheet = sheet.getSheetByName(SHEET_NAMES.CONFIG);
+    
+    for (let row = 1; row <= 5; row++) {
+      try {
+        const name = configSheet.getRange(row, 6).getValue();
+        const email = configSheet.getRange(row, 7).getValue();
+        if (name && email) {
+          console.log(`✅ Employee ${row}: ${name} (${email})`);
+        }
+      } catch (error) {
+        console.log(`❌ Employee ${row}: Error reading - ${error}`);
+      }
+    }
+  } catch (error) {
+    console.log(`❌ Employee section error: ${error}`);
+  }
+  
+  console.log('\n=== SUMMARY ===');
+  console.log(`Found configs: ${Object.keys(foundConfigs).length}/${requiredConfigs.length}`);
+  if (missingConfigs.length > 0) {
+    console.log(`Missing configs: ${missingConfigs.join(', ')}`);
+  }
+  
+  return {
+    found: foundConfigs,
+    missing: missingConfigs,
+    isComplete: missingConfigs.length === 0
+  };
 }
 
 // PHASE 2: Removed timeout functions (canSendEmail, recordEmailSent)
