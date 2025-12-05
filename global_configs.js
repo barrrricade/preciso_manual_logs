@@ -177,12 +177,11 @@ const FORM_FIELDS = {
   COMPANIES: 9       // 'this, that'
 };
 
-// Log Sheet Headers - FIXED: Corrected Employee_Name and Employee_Email order
+// Log Sheet Headers - UPDATED: Added Request_Date column to match template
 const LOG_HEADERS = [
-  'Request_ID', 'Timestamp', 'Employee_Name', 'Employee_Email',
-  'Visit_Date', 'Start_Time', 'End_Time', 'Purpose',
-  'Reimbursement', 'Description', 'Companies', 'Status',
-  'Action_Date', 'Comments'
+  'Request_ID', 'Request_Date', 'Visit_Date', 'Employee_Name', 'Employee_Email',
+  'Start_Time', 'End_Time', 'Total_Hours', 'Purpose', 'Location',
+  'Companies', 'Description', 'Reimbursement', 'Status', 'Remarks'
 ];
 
 // Status Values

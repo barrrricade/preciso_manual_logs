@@ -147,31 +147,34 @@ function getOrCreateLogsSheet() {
 }
 
 /**
- * Write form data to Logs sheet - FIXED: Correct column order
+ * Write form data to Logs sheet - UPDATED: Match new template structure with Request_Date
  */
 function writeToLogsSheet(logsSheet, requestId, formData, isValidEmployee) {
   const status = isValidEmployee ? STATUS.PENDING : STATUS.INVALID_EMPLOYEE;
+  const requestDate = new Date(); // Current date as request date
   
-  // FIXED: Correct order - Employee_Name before Employee_Email
+  // NEW STRUCTURE: Request_ID, Request_Date, Visit_Date, Employee_Name, Employee_Email, 
+  // Start_Time, End_Time, Total_Hours, Purpose, Location, Companies, Description, Reimbursement, Status, Remarks
   const rowData = [
-    requestId,
-    formData.timestamp,
-    formData.employeeName,  // Column 3: Employee_Name
-    formData.email,         // Column 4: Employee_Email
-    formData.visitDate,
-    formData.startTime,
-    formData.endTime,
-    formData.purpose,
-    formData.reimbursement,
-    formData.description,
-    formData.companies,
-    status,
-    '', // Action Date (empty initially)
-    ''  // Comments (empty initially)
+    requestId,              // Request_ID
+    requestDate,            // Request_Date (current date/time)
+    formData.visitDate,     // Visit_Date
+    formData.employeeName,  // Employee_Name
+    formData.email,         // Employee_Email
+    formData.startTime,     // Start_Time
+    formData.endTime,       // End_Time
+    '',                     // Total_Hours (calculated later if needed)
+    formData.purpose,       // Purpose
+    '',                     // Location (not in form yet)
+    formData.companies,     // Companies
+    formData.description,   // Description
+    formData.reimbursement, // Reimbursement
+    status,                 // Status
+    ''                      // Remarks (empty initially)
   ];
   
   logsSheet.appendRow(rowData);
-  console.log('Data written to Logs sheet:', rowData);
+  console.log('Data written to Logs sheet with new structure:', rowData);
 }
 
 /**

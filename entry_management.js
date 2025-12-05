@@ -121,22 +121,23 @@ function copyEntryToEmployeeTab(logEntry) {
       totalHours: totalHours
     });
     
-    // Insert data cell by cell with proper formatting
+    // Insert data cell by cell with proper formatting - UPDATED: Match new template structure
     employeeSheet.getRange(nextRow, 1).setValue(logEntry.requestId);     // A: REQUEST ID
-    employeeSheet.getRange(nextRow, 2).setValue(visitDate);              // B: DATE
-    employeeSheet.getRange(nextRow, 3).setValue('Pending');              // C: STATUS
-    employeeSheet.getRange(nextRow, 4).setValue(startTimeStr);           // D: TIME START (as string)
-    employeeSheet.getRange(nextRow, 5).setValue(endTimeStr);             // E: TIME END (as string)
-    employeeSheet.getRange(nextRow, 6).setValue(totalHours);             // F: TOTAL HOURS (as number)
-    employeeSheet.getRange(nextRow, 7).setValue(String(logEntry.purpose)); // G: PURPOSE
-    employeeSheet.getRange(nextRow, 8).setValue(extractPrimaryLocation(logEntry.companies)); // H: LOCATION
-    employeeSheet.getRange(nextRow, 9).setValue(String(logEntry.companies)); // I: COMPANIES
-    employeeSheet.getRange(nextRow, 10).setValue(String(logEntry.description)); // J: DESCRIPTION
-    employeeSheet.getRange(nextRow, 11).setValue(String(logEntry.reimbursement)); // K: REIMBURSEMENT
-    employeeSheet.getRange(nextRow, 12).setValue('');                    // L: REMARKS
+    employeeSheet.getRange(nextRow, 2).setValue(new Date());             // B: REQUEST DATE (current date)
+    employeeSheet.getRange(nextRow, 3).setValue(visitDate);              // C: VISIT DATE
+    employeeSheet.getRange(nextRow, 4).setValue('Pending');              // D: STATUS
+    employeeSheet.getRange(nextRow, 5).setValue(startTimeStr);           // E: TIME START (as string)
+    employeeSheet.getRange(nextRow, 6).setValue(endTimeStr);             // F: TIME END (as string)
+    employeeSheet.getRange(nextRow, 7).setValue(totalHours);             // G: TOTAL HOURS (as number)
+    employeeSheet.getRange(nextRow, 8).setValue(String(logEntry.purpose)); // H: PURPOSE
+    employeeSheet.getRange(nextRow, 9).setValue(extractPrimaryLocation(logEntry.companies)); // I: LOCATION
+    employeeSheet.getRange(nextRow, 10).setValue(String(logEntry.companies)); // J: COMPANIES
+    employeeSheet.getRange(nextRow, 11).setValue(String(logEntry.description)); // K: DESCRIPTION
+    employeeSheet.getRange(nextRow, 12).setValue(String(logEntry.reimbursement)); // L: REIMBURSEMENT
+    employeeSheet.getRange(nextRow, 13).setValue('');                    // M: REMARKS
     
-    // Set up dropdown validation for Status column (C)
-    const statusCell = employeeSheet.getRange(nextRow, 3);
+    // Set up dropdown validation for Status column (D) - UPDATED: Status moved to column D
+    const statusCell = employeeSheet.getRange(nextRow, 4);
     const rule = SpreadsheetApp.newDataValidation()
       .requireValueInList(['Pending', 'Approved', 'Rejected'])
       .setAllowInvalid(false)
@@ -472,8 +473,8 @@ function isStatusChange(e) {
       return false;
     }
     
-    // Must be column C (Status column) and row 10 or higher (data rows)
-    if (column !== 3 || row < 10) {
+    // Must be column D (Status column) and row 10 or higher (data rows) - UPDATED: Status now in column D
+    if (column !== 4 || row < 10) {
       return false;
     }
     
@@ -544,11 +545,15 @@ function updateLogsStatusByRequestId(requestId, newStatus) {
     
     for (let i = 1; i < data.length; i++) { // Skip header
       if (data[i][0] === requestId) { // Request ID in column A
-        // Update Status column (assuming column L - adjust if needed)
-        logsSheet.getRange(i + 1, 12).setValue(newStatus);
+        // Update Status column (column N - position 14 in new structure)
+        logsSheet.getRange(i + 1, 14).setValue(newStatus);
         
-        // Update Action Date
-        logsSheet.getRange(i + 1, 13).setValue(new Date());
+        // Update Action Date (column O - position 15, but we don't have this column yet)
+        // For now, we can add a timestamp to the Remarks column (column O - position 15)
+        const currentRemarks = logsSheet.getRange(i + 1, 15).getValue() || '';
+        const timestamp = new Date().toLocaleString();
+        const newRemarks = currentRemarks + (currentRemarks ? '; ' : '') + `${newStatus} ${timestamp}`;
+        logsSheet.getRange(i + 1, 15).setValue(newRemarks);
         
         console.log(`Updated Logs sheet row ${i + 1}: ${requestId} → ${newStatus}`);
         return true;
@@ -586,12 +591,12 @@ function updateAllEmployeeTabsStatus(requestId, newStatus, sourceSheet) {
       if (lastRow < 10) return; // No data rows
       
       // Search for matching Request ID
-      const data = employeeSheet.getRange(10, 1, lastRow - 9, 3).getValues(); // A, B, C columns
+      const data = employeeSheet.getRange(10, 1, lastRow - 9, 4).getValues(); // A, B, C, D columns
       
       for (let i = 0; i < data.length; i++) {
         if (data[i][0] === requestId) { // Request ID in column A
-          // Update Status in column C
-          employeeSheet.getRange(10 + i, 3).setValue(newStatus);
+          // Update Status in column D - UPDATED: Status now in column D
+          employeeSheet.getRange(10 + i, 4).setValue(newStatus);
           console.log(`Updated ${sheetName} row ${10 + i}: ${requestId} → ${newStatus}`);
           updatedCount++;
         }
