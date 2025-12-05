@@ -24,8 +24,8 @@ function sendManagerApprovalEmail(formData, requestId) {
     // Get email configuration
     const emailConfig = getEmailAddresses();
     
-    if (!emailConfig.manager) {
-      console.error('Manager email not configured - cannot send approval email');
+    if (!emailConfig.manager || !emailConfig.automation) {
+      console.error('Manager or automation email not configured - cannot send approval email');
       return;
     }
     
@@ -35,12 +35,13 @@ function sendManagerApprovalEmail(formData, requestId) {
     
     const emailOptions = {
       htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
+      name: `${emailConfig.company} Visit Logging System`,
+      from: emailConfig.automation  // Send from automation email
     };
     
-    // Send email to manager
+    // Send email from automation to manager
     GmailApp.sendEmail(emailConfig.manager, subject, '', emailOptions);
-    console.log(`✅ Manager approval email sent to: ${emailConfig.manager}`);
+    console.log(`✅ Manager approval email sent from: ${emailConfig.automation} to: ${emailConfig.manager}`);
     
     console.log('=== MANAGER APPROVAL EMAIL COMPLETE ===');
     
@@ -148,15 +149,25 @@ function createManagerApprovalEmailBody(formData, requestId, emailConfig) {
 }
 
 /**
- * Send employee confirmation email when approved - Green theme
+ * Send combined HR notification with employee CC when approved - SIMPLIFIED
+ * Uses automation email as sender, HR as recipient, employee as CC
  */
-function sendEmployeeConfirmationEmail(requestId, employeeEmail, employeeName) {
+function sendApprovalNotificationEmail(requestId, employeeEmail, employeeName) {
   try {
-    console.log('=== SENDING EMPLOYEE CONFIRMATION EMAIL ===');
+    console.log('=== SENDING COMBINED APPROVAL NOTIFICATION EMAIL ===');
     
     // Check if emails are enabled (respect debug_mode)
     if (!isEmailEnabled()) {
-      console.log('Emails disabled in debug mode - skipping employee confirmation email');
+      console.log('Emails disabled in debug mode - skipping approval notification email');
+      return;
+    }
+    
+    // Get email configuration
+    const emailConfig = getEmailAddresses();
+    
+    // Check if required emails are configured
+    if (!emailConfig.hr || !emailConfig.automation) {
+      console.error('HR or automation email not configured - cannot send approval notification');
       return;
     }
     
@@ -167,71 +178,23 @@ function sendEmployeeConfirmationEmail(requestId, employeeEmail, employeeName) {
       return;
     }
     
-    // Get email configuration
-    const emailConfig = getEmailAddresses();
-    
-    const subject = `[APPROVED] Your Visit Log Request - ${requestId}`;
-    const emailBody = createEmployeeConfirmationEmailBody(entryDetails, emailConfig);
+    const subject = `[APPROVED] Visit Log Notification - ${employeeName} (${requestId})`;
+    const emailBody = createCombinedApprovalEmailBody(entryDetails, emailConfig);
     
     const emailOptions = {
       htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
+      name: `${emailConfig.company} Visit Logging System`,
+      cc: employeeEmail  // Employee gets CC'd for verification
     };
     
-    GmailApp.sendEmail(employeeEmail, subject, '', emailOptions);
-    console.log(`✅ Employee confirmation email sent to: ${employeeEmail}`);
-    
-    console.log('=== EMPLOYEE CONFIRMATION EMAIL COMPLETE ===');
-    
-  } catch (error) {
-    console.error('Error sending employee confirmation email:', error);
-  }
-}
-
-/**
- * Send HR notification email when approved - Green theme (notification only)
- */
-function sendHRNotificationEmail(requestId, employeeEmail, employeeName) {
-  try {
-    console.log('=== SENDING HR NOTIFICATION EMAIL ===');
-    
-    // Check if emails are enabled (respect debug_mode)
-    if (!isEmailEnabled()) {
-      console.log('Emails disabled in debug mode - skipping HR notification email');
-      return;
-    }
-    
-    // Get email configuration
-    const emailConfig = getEmailAddresses();
-    
-    // Only send if HR email is configured and CC HR is enabled
-    if (!emailConfig.hr || !emailConfig.ccHr) {
-      console.log('HR email not configured or CC HR disabled - skipping HR notification');
-      return;
-    }
-    
-    // Get entry details from logs
-    const entryDetails = getEntryDetailsByRequestId(requestId);
-    if (!entryDetails) {
-      console.error('Entry details not found for request ID:', requestId);
-      return;
-    }
-    
-    const subject = `[HR NOTIFICATION] Visit Log Approved - ${employeeName}`;
-    const emailBody = createHRNotificationEmailBody(entryDetails, emailConfig);
-    
-    const emailOptions = {
-      htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
-    };
-    
+    // Send from automation email to HR with employee CC'd
     GmailApp.sendEmail(emailConfig.hr, subject, '', emailOptions);
-    console.log(`✅ HR notification email sent to: ${emailConfig.hr}`);
+    console.log(`✅ Combined approval notification sent - HR: ${emailConfig.hr}, Employee CC: ${employeeEmail}`);
     
-    console.log('=== HR NOTIFICATION EMAIL COMPLETE ===');
+    console.log('=== COMBINED APPROVAL NOTIFICATION COMPLETE ===');
     
   } catch (error) {
-    console.error('Error sending HR notification email:', error);
+    console.error('Error sending combined approval notification:', error);
   }
 }
 
@@ -275,6 +238,93 @@ function getEntryDetailsByRequestId(requestId) {
     console.error('Error getting entry details:', error);
     return null;
   }
+}
+
+/**
+ * Create combined approval email body - Green theme (HR + Employee)
+ */
+function createCombinedApprovalEmailBody(entryDetails, emailConfig) {
+  const spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  const visitDateFormatted = formatDate(entryDetails.visitDate);
+  const requestDateFormatted = formatDate(entryDetails.timestamp);
+  const timeRange = `${formatTime(entryDetails.startTime)} - ${formatTime(entryDetails.endTime)}`;
+  
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f5f5f5;">
+      <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+        
+        <!-- Header - Green Theme -->
+        <div style="background: linear-gradient(135deg, #4caf50, #81c784); color: white; padding: 25px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">Visit Log Approved ✅</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+            Employee visit request approved by management
+          </p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 30px;">
+          <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
+            Hi ${emailConfig.hrName} & ${entryDetails.employeeName},
+          </p>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+            This visit log entry has been approved by ${emailConfig.managerName}:
+          </p>
+          
+          <!-- Entry Details - Green border -->
+          <div style="border: 1px solid #4caf50; border-radius: 8px; padding: 15px; margin: 10px 0; background: #f8fff8;">
+            <h4 style="margin: 0 0 10px 0; color: #4caf50;">📋 Approved Visit Log</h4>
+            <p style="margin: 5px 0;"><strong>Employee:</strong> ${entryDetails.employeeName}</p>
+            <p style="margin: 5px 0;"><strong>Request Date:</strong> ${requestDateFormatted}</p>
+            <p style="margin: 5px 0;"><strong>Visit Date:</strong> ${visitDateFormatted}</p>
+            <p style="margin: 5px 0;"><strong>Time:</strong> ${timeRange}</p>
+            <p style="margin: 5px 0;"><strong>Companies:</strong> ${entryDetails.companies}</p>
+            <p style="margin: 5px 0;"><strong>Purpose:</strong> ${entryDetails.purpose}</p>
+            <p style="margin: 5px 0;"><strong>Description:</strong> ${entryDetails.description || 'N/A'}</p>
+            <p style="margin: 5px 0;"><strong>Reimbursement Flag:</strong> 
+              <span style="color: #4caf50; font-weight: bold;">${entryDetails.reimbursement}</span>
+            </p>
+            <p style="margin: 5px 0;"><strong>Approved by:</strong> ${emailConfig.managerName}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Request ID:</strong> ${entryDetails.requestId}</p>
+          </div>
+          
+          <!-- HR Information - Green -->
+          <div style="background: #e8f5e8; border: 1px solid #c8e6c9; border-radius: 6px; padding: 15px; margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #2e7d32;">📋 For HR (${emailConfig.hrName}):</h4>
+            <p style="margin: 0; color: #333;">
+              <strong>No Action Required:</strong> This is a notification only. The visit log has been approved and recorded in the employee's activity report.
+            </p>
+          </div>
+          
+          <!-- Employee Information - Blue -->
+          <div style="background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 6px; padding: 15px; margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #1976d2;">✅ For Employee (${entryDetails.employeeName}):</h4>
+            <p style="margin: 0; color: #333;">
+              <strong>Verification:</strong> Please confirm the details above are correct. Your visit log has been recorded in your activity report.
+            </p>
+          </div>
+          
+          <!-- View Report Button - Blue -->
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${spreadsheetUrl}" 
+               style="display: inline-block; background-color: #1976d2; color: white; padding: 12px 25px; 
+                      text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
+              📊 VIEW ACTIVITY REPORT
+            </a>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
+          <p style="margin: 0;">
+            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong><br>
+            Sent from automation system when visit logs are approved by management
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  `;
 }
 
 /**
@@ -508,9 +558,8 @@ function handleApprovalAction(requestId) {
       return false;
     }
     
-    // Send confirmation emails (both green theme)
-    sendEmployeeConfirmationEmail(requestId, entryDetails.employeeEmail, entryDetails.employeeName);
-    sendHRNotificationEmail(requestId, entryDetails.employeeEmail, entryDetails.employeeName);
+    // Send combined approval notification (HR + Employee CC)
+    sendApprovalNotificationEmail(requestId, entryDetails.employeeEmail, entryDetails.employeeName);
     
     console.log('✅ Approval action completed successfully');
     return true;
