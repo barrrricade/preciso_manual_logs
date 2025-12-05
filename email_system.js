@@ -527,18 +527,15 @@ function formatTime(time) {
 }
 
 /**
- * Get web app URL for approval links - FIXED: Use actual deployment URL
+ * Get web app URL for approval links - Uses config from global_configs.js
  */
 function getWebAppUrl() {
-  // ACTUAL DEPLOYED WEB APP URL (from user's deployment)
-  const deployedWebAppUrl = 'https://script.google.com/macros/s/AKfycbx5NsrdoHi7rBFtlwxmTgFd6uXlHg4yYnxLEq5JFJReox6GzsybYqs2T30DFZJPs6do/exec';
+  // Try to get web app URL from config sheet first, fallback to default
+  const configUrl = getConfigValue('web_app_url');
+  const webAppUrl = configUrl || WEB_APP_CONFIG.DEFAULT_URL;
   
-  // Log for debugging
-  const scriptId = ScriptApp.getScriptId();
-  console.log(`Script ID detected: ${scriptId}`);
-  console.log(`Using deployed web app URL: ${deployedWebAppUrl}`);
-  
-  return deployedWebAppUrl;
+  console.log(`Web app URL: ${webAppUrl} (from ${configUrl ? 'config' : 'default'})`);
+  return webAppUrl;
 }
 
 /**

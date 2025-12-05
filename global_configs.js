@@ -8,6 +8,12 @@ const SHEET_NAMES = {
   TEMPLATE: 'Template'
 };
 
+// Web App Configuration
+const WEB_APP_CONFIG = {
+  // Default web app URL - can be overridden by config sheet value 'web_app_url'
+  DEFAULT_URL: 'https://script.google.com/macros/s/AKfycbx5NsrdoHi7rBFtlwxmTgFd6uXlHg4yYnxLEq5JFJReox6GzsybYqs2T30DFZJPs6do/exec'
+};
+
 // Email Configuration
 const EMAIL_CONFIG = {
   DEBUG_CELL: 'B9'

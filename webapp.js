@@ -332,50 +332,15 @@ function createJsonResponse(data) {
 }
 
 /**
-<<<<<<< Updated upstream
- * Get the deployed web app URL
- * This function should be updated with the actual deployed URL after deployment
-||||||| Stash base
- * Get the deployed web app URL - FIXED: Use correct deployment URL
-=======
- * Get the deployed web app URL - FIXED: Use actual deployment URL
->>>>>>> Stashed changes
+ * Get the deployed web app URL - Uses config from global_configs.js
  */
 function getWebAppUrl() {
-<<<<<<< Updated upstream
-  // TODO: Replace with actual deployed web app URL after deployment
-  // Format: https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
-||||||| Stash base
-  // IMPORTANT: This should be the ACTUAL deployed web app URL from your deployment
-  // The ScriptApp.getScriptId() gives the script ID, but the deployment URL might be different
-=======
-  // ACTUAL DEPLOYED WEB APP URL (from user's deployment)
-  const deployedWebAppUrl = 'https://script.google.com/macros/s/AKfycbx5NsrdoHi7rBFtlwxmTgFd6uXlHg4yYnxLEq5JFJReox6GzsybYqs2T30DFZJPs6do/exec';
->>>>>>> Stashed changes
+  // Try to get web app URL from config sheet first, fallback to default
+  const configUrl = getConfigValue('web_app_url');
+  const webAppUrl = configUrl || WEB_APP_CONFIG.DEFAULT_URL;
   
-<<<<<<< Updated upstream
-  // Get the script ID automatically
-||||||| Stash base
-  // For now, use the script ID method, but log for debugging
-=======
-  // Log for debugging
->>>>>>> Stashed changes
-  const scriptId = ScriptApp.getScriptId();
-<<<<<<< Updated upstream
-  return `https://script.google.com/macros/s/${scriptId}/exec`;
-||||||| Stash base
-  const webAppUrl = `https://script.google.com/macros/s/${scriptId}/exec`;
-  
-  console.log(`Web App URL generated: ${webAppUrl}`);
-  console.log(`Script ID detected: ${scriptId}`);
-  
+  console.log(`Web app URL: ${webAppUrl} (from ${configUrl ? 'config' : 'default'})`);
   return webAppUrl;
-=======
-  console.log(`Script ID detected: ${scriptId}`);
-  console.log(`Using deployed web app URL: ${deployedWebAppUrl}`);
-  
-  return deployedWebAppUrl;
->>>>>>> Stashed changes
 }
 
 /**
