@@ -947,9 +947,96 @@ function testWebAppUrl() {
   console.log(`Web App URL: ${webAppUrl}`);
   
   // Test URL construction with actual Request ID
-  const testRequestId = 'REQ-1764935854141-278';
+  const testRequestId = 'REQ-1764936599767-341';
   const approveUrl = `${webAppUrl}?action=approve&requestId=${testRequestId}`;
   console.log(`Approve URL: ${approveUrl}`);
   
   console.log('=== WEB APP URL TEST COMPLETE ===');
+}
+
+/**
+ * DIAGNOSTIC: Check if doGet function exists and is accessible
+ */
+function checkDoGetFunction() {
+  console.log('=== CHECKING DOGET FUNCTION ===');
+  
+  // Check if doGet function exists
+  if (typeof doGet === 'function') {
+    console.log('✅ doGet function exists');
+    
+    // Test doGet function directly
+    try {
+      const testEvent = {
+        parameter: {
+          action: 'approve',
+          requestId: 'REQ-1764936599767-341'
+        }
+      };
+      
+      console.log('Testing doGet with parameters:', testEvent.parameter);
+      const result = doGet(testEvent);
+      console.log('✅ doGet function executed successfully');
+      console.log('Result type:', typeof result);
+      
+    } catch (error) {
+      console.error('❌ doGet function error:', error);
+    }
+    
+  } else {
+    console.error('❌ doGet function NOT FOUND');
+  }
+  
+  // Check if handleApprovalAction exists
+  if (typeof handleApprovalAction === 'function') {
+    console.log('✅ handleApprovalAction function exists');
+  } else {
+    console.error('❌ handleApprovalAction function NOT FOUND');
+  }
+  
+  console.log('=== DOGET CHECK COMPLETE ===');
+}
+
+/**
+ * DIAGNOSTIC: Test web app deployment status
+ */
+function testWebAppDeployment() {
+  console.log('=== TESTING WEB APP DEPLOYMENT ===');
+  
+  // Get current script ID and web app URL
+  const scriptId = ScriptApp.getScriptId();
+  const webAppUrl = getWebAppUrl();
+  
+  console.log(`Script ID: ${scriptId}`);
+  console.log(`Web App URL: ${webAppUrl}`);
+  
+  // Check if functions exist
+  console.log('\n--- Function Availability ---');
+  const functions = ['doGet', 'doPost', 'handleApprovalAction', 'getWebAppUrl'];
+  functions.forEach(funcName => {
+    if (typeof eval(funcName) === 'function') {
+      console.log(`✅ ${funcName}: Available`);
+    } else {
+      console.log(`❌ ${funcName}: NOT FOUND`);
+    }
+  });
+  
+  // Test basic doGet functionality
+  console.log('\n--- Testing doGet Function ---');
+  try {
+    const mockEvent = {
+      parameter: {
+        action: 'approve',
+        requestId: 'REQ-test-deployment'
+      }
+    };
+    
+    const response = doGet(mockEvent);
+    console.log('✅ doGet test successful');
+    console.log('Response type:', typeof response);
+    
+  } catch (error) {
+    console.error('❌ doGet test failed:', error);
+  }
+  
+  console.log('=== DEPLOYMENT TEST COMPLETE ===');
 }
