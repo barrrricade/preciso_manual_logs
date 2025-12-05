@@ -286,5 +286,34 @@ User provided complete CSV exports showing exact cell positions and data structu
 - **HTML previews available** at ~/Desktop/Goose/holiday_request/html_previews
 - **Debug mode ready** for quota-safe testing
 
+## BUG FIXES APPLIED 🔧
+
+### Issues Found in User Testing Logs:
+1. **Form Field Mapping Issue**: 
+   - Visit date was at index 3, not 2 (due to removed employee dropdown)
+   - All subsequent fields were shifted
+   - **FIXED**: Updated FORM_FIELDS mapping in global_configs.js
+
+2. **Year Extraction Issue**:
+   - Visit date showing as empty instead of '01/01/2026'
+   - Year extraction failing, should create "desmond 2026" tab
+   - Employee tab defaulting to current year (2025)
+
+3. **Email Debug Mode Issue**:
+   - Error accessing typed columns in Google Sheets
+   - **FIXED**: Updated isEmailEnabled() to use getConfigValue()
+
+### Bug Fixes Applied:
+- ✅ **Fixed FORM_FIELDS mapping** to match actual form data indices
+- ✅ **Fixed isEmailEnabled()** to handle Google Sheets typed columns
+- ✅ **Updated debug mode logic** to properly read config values
+
+### Form Data Mapping (CORRECTED):
+```
+Index 0: timestamp, Index 1: email, Index 2: empty
+Index 3: visit_date, Index 4: start_time, Index 5: end_time
+Index 6: purpose, Index 7: reimbursement, Index 8: description, Index 9: companies
+```
+
 ---
-*Last updated: 2024-12-05 - PHASE 2 COMPLETED ✅*
+*Last updated: 2024-12-05 - BUG FIXES APPLIED ✅*

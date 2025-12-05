@@ -15,7 +15,7 @@ const EMAIL_CONFIG = {
 };
 
 /**
- * Check if email sending is enabled (debug mode)
+ * Check if email sending is enabled (debug mode) - FIXED: Handle typed columns
  */
 function isEmailEnabled() {
   try {
@@ -27,10 +27,18 @@ function isEmailEnabled() {
       return false;
     }
     
-    const debugValue = configSheet.getRange(EMAIL_CONFIG.DEBUG_CELL).getValue();
-    const isEnabled = debugValue === true || debugValue === 'TRUE';
+    // Try to get debug_mode from config using getConfigValue instead of direct cell access
+    const debugValue = getConfigValue('debug_mode');
     
-    console.log(`Email debug check - Cell ${EMAIL_CONFIG.DEBUG_CELL}: "${debugValue}", Emails enabled: ${isEnabled}`);
+    if (debugValue === null) {
+      console.log('Debug mode not found in config - emails disabled');
+      return false;
+    }
+    
+    // Check if debug mode is FALSE (emails enabled) or TRUE (emails disabled)
+    const isEnabled = debugValue === false || debugValue === 'FALSE';
+    
+    console.log(`Email debug check - debug_mode: "${debugValue}", Emails enabled: ${isEnabled}`);
     return isEnabled;
     
   } catch (error) {
@@ -155,18 +163,18 @@ function getEmployeeNameFromEmail(email) {
 // Request ID Configuration
 const REQUEST_ID_PREFIX = 'REQ-';
 
-// Form Field Mapping (e.values indices) - UPDATED: No employee name dropdown
+// Form Field Mapping (e.values indices) - FIXED: Based on actual form data
 const FORM_FIELDS = {
-  TIMESTAMP: 0,
-  EMAIL: 1,
-  // EMPLOYEE_NAME removed - will be derived from email validation
-  VISIT_DATE: 2,
-  START_TIME: 3,
-  END_TIME: 4,
-  PURPOSE: 5,
-  REIMBURSEMENT: 6,
-  DESCRIPTION: 7,
-  COMPANIES: 8
+  TIMESTAMP: 0,      // '05/12/2025 02:19:49'
+  EMAIL: 1,          // 'ipkinghangdesmond@gmail.com'
+  // Index 2 is empty (removed employee name dropdown)
+  VISIT_DATE: 3,     // '01/01/2026'
+  START_TIME: 4,     // '10:10:00'
+  END_TIME: 5,       // '13:13:00'
+  PURPOSE: 6,        // 'testing'
+  REIMBURSEMENT: 7,  // 'Yes'
+  DESCRIPTION: 8,    // '123'
+  COMPANIES: 9       // 'this, that'
 };
 
 // Log Sheet Headers - FIXED: Corrected Employee_Name and Employee_Email order
