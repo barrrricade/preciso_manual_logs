@@ -169,26 +169,67 @@ const CONFIG_LAYOUT = {
   }
 };
 
+/**
+ * Get employee name from email address
+ */
+function getEmployeeNameFromEmail(email) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet();
+    const configSheet = sheet.getSheetByName(SHEET_NAMES.CONFIG);
+    
+    if (!configSheet) {
+      console.log('Config sheet not found');
+      return null;
+    }
+    
+    // Get employee data from Config sheet
+    const startRow = CONFIG_LAYOUT.EMPLOYEES.START_ROW;
+    const endRow = CONFIG_LAYOUT.EMPLOYEES.END_ROW;
+    const nameRange = configSheet.getRange(startRow, CONFIG_LAYOUT.EMPLOYEES.NAME_COL, endRow - startRow + 1, 1);
+    const emailRange = configSheet.getRange(startRow, CONFIG_LAYOUT.EMPLOYEES.EMAIL_COL, endRow - startRow + 1, 1);
+    
+    const nameData = nameRange.getValues();
+    const emailData = emailRange.getValues();
+    
+    for (let i = 0; i < emailData.length; i++) {
+      const configEmail = emailData[i][0];
+      const configName = nameData[i][0];
+      
+      if (configEmail && configEmail === email && configName) {
+        console.log(`Employee name found for ${email}: ${configName}`);
+        return configName;
+      }
+    }
+    
+    console.log(`Employee name not found for email: ${email}`);
+    return null;
+    
+  } catch (error) {
+    console.error('Error getting employee name from email:', error);
+    return null;
+  }
+}
+
 // Request ID Configuration
 const REQUEST_ID_PREFIX = 'REQ-';
 
-// Form Field Mapping (e.values indices)
+// Form Field Mapping (e.values indices) - UPDATED: No employee name dropdown
 const FORM_FIELDS = {
   TIMESTAMP: 0,
   EMAIL: 1,
-  EMPLOYEE_NAME: 2,
-  VISIT_DATE: 3,
-  START_TIME: 4,
-  END_TIME: 5,
-  PURPOSE: 6,
-  REIMBURSEMENT: 7,
-  DESCRIPTION: 8,
-  COMPANIES: 9
+  // EMPLOYEE_NAME removed - will be derived from email validation
+  VISIT_DATE: 2,
+  START_TIME: 3,
+  END_TIME: 4,
+  PURPOSE: 5,
+  REIMBURSEMENT: 6,
+  DESCRIPTION: 7,
+  COMPANIES: 8
 };
 
-// Log Sheet Headers
+// Log Sheet Headers - FIXED: Corrected Employee_Name and Employee_Email order
 const LOG_HEADERS = [
-  'Request_ID', 'Timestamp', 'Employee_Email', 'Employee_Name',
+  'Request_ID', 'Timestamp', 'Employee_Name', 'Employee_Email',
   'Visit_Date', 'Start_Time', 'End_Time', 'Purpose',
   'Reimbursement', 'Description', 'Companies', 'Status',
   'Action_Date', 'Comments'

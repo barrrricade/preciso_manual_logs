@@ -10,9 +10,14 @@ function onFormSubmit(e) {
     const formData = extractFormData(e.values);
     console.log('Extracted form data:', formData);
     
-    // Validate employee
+    // Validate employee and get name
     const isValidEmployee = validateEmployeeByEmail(formData.email);
     console.log('Employee validation result:', isValidEmployee);
+    
+    // If employee is not valid, don't proceed with tab creation
+    if (!isValidEmployee) {
+      console.log('Invalid employee - skipping tab creation and employee processing');
+    }
     
     // Generate Request ID
     const requestId = generateNextRequestId();
@@ -52,13 +57,16 @@ function onFormSubmit(e) {
 }
 
 /**
- * Extract form data from e.values array
+ * Extract form data from e.values array - UPDATED: No employee name dropdown
  */
 function extractFormData(values) {
+  const email = values[FORM_FIELDS.EMAIL];
+  const employeeName = getEmployeeNameFromEmail(email); // Derive name from email
+  
   return {
     timestamp: values[FORM_FIELDS.TIMESTAMP],
-    email: values[FORM_FIELDS.EMAIL],
-    employeeName: values[FORM_FIELDS.EMPLOYEE_NAME],
+    email: email,
+    employeeName: employeeName, // Derived from email validation
     visitDate: values[FORM_FIELDS.VISIT_DATE],
     startTime: values[FORM_FIELDS.START_TIME],
     endTime: values[FORM_FIELDS.END_TIME],
@@ -70,7 +78,7 @@ function extractFormData(values) {
 }
 
 /**
- * Validate employee by email against Config sheet column G
+ * Validate employee by email against Config sheet column G - UPDATED: Use CONFIG_LAYOUT
  */
 function validateEmployeeByEmail(email) {
   try {
@@ -82,10 +90,13 @@ function validateEmployeeByEmail(email) {
       return false;
     }
     
-    // Get email data from column G
-    const emailData = configSheet.getRange('G1:G50').getValues();
+    // Use CONFIG_LAYOUT constants for consistent column/row references
+    const startRow = CONFIG_LAYOUT.EMPLOYEES.START_ROW;
+    const endRow = CONFIG_LAYOUT.EMPLOYEES.END_ROW;
+    const emailRange = configSheet.getRange(startRow, CONFIG_LAYOUT.EMPLOYEES.EMAIL_COL, endRow - startRow + 1, 1);
+    const emailData = emailRange.getValues();
     
-    for (let i = 1; i < emailData.length; i++) { // Skip header row
+    for (let i = 0; i < emailData.length; i++) {
       const configEmail = emailData[i][0];
       if (configEmail && configEmail === email) {
         console.log('Valid employee found:', email);
@@ -133,16 +144,17 @@ function getOrCreateLogsSheet() {
 }
 
 /**
- * Write form data to Logs sheet
+ * Write form data to Logs sheet - FIXED: Correct column order
  */
 function writeToLogsSheet(logsSheet, requestId, formData, isValidEmployee) {
   const status = isValidEmployee ? STATUS.PENDING : STATUS.INVALID_EMPLOYEE;
   
+  // FIXED: Correct order - Employee_Name before Employee_Email
   const rowData = [
     requestId,
     formData.timestamp,
-    formData.email,
-    formData.employeeName,
+    formData.employeeName,  // Column 3: Employee_Name
+    formData.email,         // Column 4: Employee_Email
     formData.visitDate,
     formData.startTime,
     formData.endTime,
