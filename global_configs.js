@@ -17,7 +17,7 @@ const WEB_APP_CONFIG = {
 // System Information
 const SYSTEM_INFO = {
   VERSION: '1.0.0',
-  COMMIT_ID: 'a170613', // Update manually or use automated deployment
+  COMMIT_ID: '83bb6d9', // Updated after cleanup commit
   CREATED_BY: 'D.ip',
   BUILD_DATE: '2025-12-05'
 };

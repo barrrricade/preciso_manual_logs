@@ -879,43 +879,6 @@ function checkDeploymentStatus() {
   console.log('=== DIAGNOSTIC COMPLETE ===');
 }
 
-/**
- * Test form field extraction with latest logs data
- */
-function testFormFieldExtraction() {
-  console.log('=== TESTING FORM FIELD EXTRACTION ===');
-  
-  // Use the exact data from your logs
-  const testFormData = [
-    '05/12/2025 03:57:32',
-    'ipkinghangdesmond@gmail.com',
-    '',
-    '28/01/2026',
-    '09:00:00',
-    '12:00:00',
-    'testing email',
-    'Yes',
-    '',
-    'asd'
-  ];
-  
-  console.log('Test form data:', testFormData);
-  
-  // Test extraction
-  const extracted = extractFormData(testFormData);
-  console.log('Extracted data:', extracted);
-  
-  // Verify each field
-  console.log('Field verification:');
-  console.log(`✅ visitDate: "${extracted.visitDate}" (should be "28/01/2026")`);
-  console.log(`✅ startTime: "${extracted.startTime}" (should be "09:00:00")`);
-  console.log(`✅ endTime: "${extracted.endTime}" (should be "12:00:00")`);
-  console.log(`✅ purpose: "${extracted.purpose}" (should be "testing email")`);
-  console.log(`✅ reimbursement: "${extracted.reimbursement}" (should be "Yes")`);
-  console.log(`✅ companies: "${extracted.companies}" (should be "asd")`);
-  
-  console.log('=== EXTRACTION TEST COMPLETE ===');
-}
 
 /**
  * Test date formatting with actual data
