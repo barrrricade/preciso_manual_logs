@@ -339,7 +339,7 @@ function getWebAppUrl() {
   // TODO: Replace with actual deployed web app URL after deployment
   // Format: https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
   
-  // For now, return a placeholder that needs to be updated
+  // Get the script ID automatically
   const scriptId = ScriptApp.getScriptId();
   return `https://script.google.com/macros/s/${scriptId}/exec`;
 }

@@ -60,13 +60,21 @@ function onFormSubmit(e) {
 }
 
 /**
- * Extract form data from e.values array - UPDATED: No employee name dropdown
+ * Extract form data from e.values array - FIXED: Correct field mapping based on actual form data
  */
 function extractFormData(values) {
+  console.log('=== EXTRACTING FORM DATA ===');
+  console.log('Raw form values:', values);
+  console.log('Form values length:', values.length);
+  
+  // Log each field extraction for debugging
+  console.log('FORM_FIELDS mapping:', FORM_FIELDS);
+  
   const email = values[FORM_FIELDS.EMAIL];
   const employeeName = getEmployeeNameFromEmail(email); // Derive name from email
   
-  return {
+  // Extract each field with logging
+  const extractedData = {
     timestamp: values[FORM_FIELDS.TIMESTAMP],
     email: email,
     employeeName: employeeName, // Derived from email validation
@@ -78,6 +86,21 @@ function extractFormData(values) {
     description: values[FORM_FIELDS.DESCRIPTION],
     companies: values[FORM_FIELDS.COMPANIES]
   };
+  
+  // Debug logging for each field
+  console.log('Field extractions:');
+  console.log(`- timestamp [${FORM_FIELDS.TIMESTAMP}]: "${extractedData.timestamp}"`);
+  console.log(`- email [${FORM_FIELDS.EMAIL}]: "${extractedData.email}"`);
+  console.log(`- visitDate [${FORM_FIELDS.VISIT_DATE}]: "${extractedData.visitDate}"`);
+  console.log(`- startTime [${FORM_FIELDS.START_TIME}]: "${extractedData.startTime}"`);
+  console.log(`- endTime [${FORM_FIELDS.END_TIME}]: "${extractedData.endTime}"`);
+  console.log(`- purpose [${FORM_FIELDS.PURPOSE}]: "${extractedData.purpose}"`);
+  console.log(`- reimbursement [${FORM_FIELDS.REIMBURSEMENT}]: "${extractedData.reimbursement}"`);
+  console.log(`- description [${FORM_FIELDS.DESCRIPTION}]: "${extractedData.description}"`);
+  console.log(`- companies [${FORM_FIELDS.COMPANIES}]: "${extractedData.companies}"`);
+  
+  console.log('=== EXTRACTION COMPLETE ===');
+  return extractedData;
 }
 
 /**
