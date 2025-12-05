@@ -527,12 +527,18 @@ function formatTime(time) {
 }
 
 /**
- * Get web app URL for approval links
+ * Get web app URL for approval links - FIXED: Use actual deployment URL
  */
 function getWebAppUrl() {
-  // Get the script ID and construct web app URL
+  // ACTUAL DEPLOYED WEB APP URL (from user's deployment)
+  const deployedWebAppUrl = 'https://script.google.com/macros/s/AKfycbx5NsrdoHi7rBFtlwxmTgFd6uXlHg4yYnxLEq5JFJReox6GzsybYqs2T30DFZJPs6do/exec';
+  
+  // Log for debugging
   const scriptId = ScriptApp.getScriptId();
-  return `https://script.google.com/macros/s/${scriptId}/exec`;
+  console.log(`Script ID detected: ${scriptId}`);
+  console.log(`Using deployed web app URL: ${deployedWebAppUrl}`);
+  
+  return deployedWebAppUrl;
 }
 
 /**

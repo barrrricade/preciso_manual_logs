@@ -777,3 +777,179 @@ function previewConfirmationEmail() {
   
   console.log('=== PREVIEW COMPLETE ===');
 }
+
+/**
+ * DIAGNOSTIC: Test web app functionality (moved from webapp.js)
+ */
+function testWebAppFunctionality() {
+  console.log('=== TESTING WEB APP FUNCTIONALITY ===');
+  
+  // Test approval action
+  const testRequestId = 'REQ-1764935854141-278'; // Use actual Request ID from logs
+  console.log(`Testing approval for: ${testRequestId}`);
+  
+  // Simulate GET request
+  const mockGetEvent = {
+    parameter: {
+      action: 'approve',
+      requestId: testRequestId
+    }
+  };
+  
+  try {
+    const response = doGet(mockGetEvent);
+    console.log('GET response type:', typeof response);
+    console.log('GET response success');
+  } catch (error) {
+    console.error('GET test error:', error);
+  }
+  
+  // Test web app URL generation
+  const webAppUrl = getWebAppUrl();
+  console.log('Web app URL:', webAppUrl);
+  
+  console.log('=== WEB APP TEST COMPLETE ===');
+}
+
+/**
+ * DIAGNOSTIC: Test if web app responds to basic requests (moved from webapp.js)
+ */
+function testWebAppBasic() {
+  console.log('=== BASIC WEB APP TEST ===');
+  
+  try {
+    // Test basic doGet without parameters
+    const basicEvent = { parameter: {} };
+    const response = doGet(basicEvent);
+    console.log('Basic doGet response:', response);
+    
+    // Test with valid parameters
+    const validEvent = {
+      parameter: {
+        action: 'approve',
+        requestId: 'REQ-test-123'
+      }
+    };
+    const validResponse = doGet(validEvent);
+    console.log('Valid doGet response:', validResponse);
+    
+  } catch (error) {
+    console.error('Basic web app test error:', error);
+  }
+  
+  console.log('=== BASIC TEST COMPLETE ===');
+}
+
+/**
+ * DIAGNOSTIC: Check deployment status and URLs (moved from webapp.js)
+ */
+function checkDeploymentStatus() {
+  console.log('=== DEPLOYMENT DIAGNOSTIC ===');
+  
+  try {
+    const scriptId = ScriptApp.getScriptId();
+    const webAppUrl = getWebAppUrl();
+    
+    console.log(`Script ID: ${scriptId}`);
+    console.log(`Generated Web App URL: ${webAppUrl}`);
+    
+    // Test if handleApprovalAction function exists
+    if (typeof handleApprovalAction === 'function') {
+      console.log('✅ handleApprovalAction function exists');
+    } else {
+      console.log('❌ handleApprovalAction function NOT found');
+    }
+    
+    // Test basic web app structure
+    console.log('Testing doGet function...');
+    const testEvent = {
+      parameter: {
+        action: 'approve',
+        requestId: 'REQ-1764935854141-278'
+      }
+    };
+    
+    const result = doGet(testEvent);
+    console.log('doGet test result type:', typeof result);
+    
+  } catch (error) {
+    console.error('Deployment diagnostic error:', error);
+  }
+  
+  console.log('=== DIAGNOSTIC COMPLETE ===');
+}
+
+/**
+ * Test form field extraction with latest logs data
+ */
+function testFormFieldExtraction() {
+  console.log('=== TESTING FORM FIELD EXTRACTION ===');
+  
+  // Use the exact data from your logs
+  const testFormData = [
+    '05/12/2025 03:57:32',
+    'ipkinghangdesmond@gmail.com',
+    '',
+    '28/01/2026',
+    '09:00:00',
+    '12:00:00',
+    'testing email',
+    'Yes',
+    '',
+    'asd'
+  ];
+  
+  console.log('Test form data:', testFormData);
+  
+  // Test extraction
+  const extracted = extractFormData(testFormData);
+  console.log('Extracted data:', extracted);
+  
+  // Verify each field
+  console.log('Field verification:');
+  console.log(`✅ visitDate: "${extracted.visitDate}" (should be "28/01/2026")`);
+  console.log(`✅ startTime: "${extracted.startTime}" (should be "09:00:00")`);
+  console.log(`✅ endTime: "${extracted.endTime}" (should be "12:00:00")`);
+  console.log(`✅ purpose: "${extracted.purpose}" (should be "testing email")`);
+  console.log(`✅ reimbursement: "${extracted.reimbursement}" (should be "Yes")`);
+  console.log(`✅ companies: "${extracted.companies}" (should be "asd")`);
+  
+  console.log('=== EXTRACTION TEST COMPLETE ===');
+}
+
+/**
+ * Test date formatting with actual data
+ */
+function testDateFormatting() {
+  console.log('=== TESTING DATE FORMATTING ===');
+  
+  // Test with the actual date from your logs
+  const testDate = '28/01/2026';
+  console.log(`Testing date: "${testDate}"`);
+  
+  const formatted = formatDate(testDate);
+  console.log(`Formatted result: "${formatted}"`);
+  
+  // Test year extraction
+  const year = getYearFromDate(testDate);
+  console.log(`Extracted year: ${year}`);
+  
+  console.log('=== DATE FORMATTING TEST COMPLETE ===');
+}
+
+/**
+ * Test web app URL with actual deployment URL
+ */
+function testWebAppUrl() {
+  console.log('=== TESTING WEB APP URL ===');
+  
+  const webAppUrl = getWebAppUrl();
+  console.log(`Web App URL: ${webAppUrl}`);
+  
+  // Test URL construction with actual Request ID
+  const testRequestId = 'REQ-1764935854141-278';
+  const approveUrl = `${webAppUrl}?action=approve&requestId=${testRequestId}`;
+  console.log(`Approve URL: ${approveUrl}`);
+  
+  console.log('=== WEB APP URL TEST COMPLETE ===');
+}
