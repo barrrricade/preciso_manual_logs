@@ -1,130 +1,74 @@
 /**
- * Email System for Visit Log Approvals - Button-Based System
+ * PHASE 2: Simplified Approve-Only Email System
+ * - Removed timing dependencies
+ * - Single APPROVE button for manager
+ * - Respects debug_mode config
+ * - Immediate email sending on form submission
+ * - HR gets notification only (no actions required)
+ * - Reimbursement is just a flag for manager visibility
  */
 
 /**
- * Get all pending entries from Logs sheet
+ * Send immediate manager approval email on form submission
  */
-function getPendingEntries() {
+function sendManagerApprovalEmail(formData, requestId) {
   try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet();
-    const logsSheet = sheet.getSheetByName(SHEET_NAMES.LOGS);
+    console.log('=== SENDING MANAGER APPROVAL EMAIL ===');
     
-    if (!logsSheet) {
-      console.log('Logs sheet not found');
-      return [];
+    // Check if emails are enabled (respect debug_mode)
+    if (!isEmailEnabled()) {
+      console.log('Emails disabled in debug mode - skipping manager approval email');
+      return;
     }
     
-    const lastRow = logsSheet.getLastRow();
-    if (lastRow <= 1) {
-      console.log('No data in Logs sheet');
-      return [];
+    // Get email configuration
+    const emailConfig = getEmailAddresses();
+    
+    if (!emailConfig.manager) {
+      console.error('Manager email not configured - cannot send approval email');
+      return;
     }
     
-    // Get all data from Logs sheet
-    const data = logsSheet.getRange(2, 1, lastRow - 1, 14).getValues(); // Skip header row
-    const pendingEntries = [];
+    // Create approval email
+    const subject = `[APPROVAL REQUIRED] Visit Log Submission - ${formData.employeeName}`;
+    const emailBody = createManagerApprovalEmailBody(formData, requestId, emailConfig);
     
-    data.forEach((row, index) => {
-      const status = row[11]; // Status column (L)
-      
-      if (status === STATUS.PENDING) {
-        pendingEntries.push({
-          requestId: row[0],      // Request_ID
-          timestamp: row[1],      // Timestamp
-          email: row[2],          // Employee_Email
-          employeeName: row[3],   // Employee_Name
-          visitDate: row[4],      // Visit_Date
-          startTime: row[5],      // Start_Time
-          endTime: row[6],        // End_Time
-          purpose: row[7],        // Purpose
-          reimbursement: row[8],  // Reimbursement
-          description: row[9],    // Description
-          companies: row[10],     // Companies
-          rowNumber: index + 2    // For reference (1-based + header)
-        });
-      }
-    });
+    const emailOptions = {
+      htmlBody: emailBody,
+      name: `${emailConfig.company} Visit Logging System`
+    };
     
-    console.log(`Found ${pendingEntries.length} pending entries`);
-    return pendingEntries;
+    // Send email to manager
+    GmailApp.sendEmail(emailConfig.manager, subject, '', emailOptions);
+    console.log(`✅ Manager approval email sent to: ${emailConfig.manager}`);
+    
+    console.log('=== MANAGER APPROVAL EMAIL COMPLETE ===');
     
   } catch (error) {
-    console.error('Error getting pending entries:', error);
-    return [];
+    console.error('Error sending manager approval email:', error);
   }
 }
 
 /**
- * Create HTML email body for batch approval
+ * Create manager approval email body - APPROVE ONLY (Yellow/Pending theme)
  */
-function createBatchEmailBody(pendingEntries, emailConfig) {
+function createManagerApprovalEmailBody(formData, requestId, emailConfig) {
   const spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  const visitDateFormatted = formatDate(formData.visitDate);
+  const timeRange = `${formatTime(formData.startTime)} - ${formatTime(formData.endTime)}`;
   
-  let entriesHtml = '';
-  
-  pendingEntries.forEach(entry => {
-    const visitDateFormatted = formatDate(entry.visitDate);
-    const timeRange = `${formatTime(entry.startTime)} - ${formatTime(entry.endTime)}`;
-    
-    entriesHtml += `
-      <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 15px 0; background: #fafafa;">
-        <h3 style="margin: 0 0 10px 0; color: #2c5aa0; font-size: 18px;">
-          ${entry.employeeName} (${visitDateFormatted}, ${timeRange})
-        </h3>
-        <p style="margin: 5px 0; color: #333;">
-          <strong>Companies:</strong> ${entry.companies}
-        </p>
-        <p style="margin: 5px 0; color: #333;">
-          <strong>Purpose:</strong> ${entry.purpose}
-        </p>
-        <p style="margin: 5px 0; color: #333;">
-          <strong>Reimbursement:</strong> 
-          <span style="color: ${entry.reimbursement === 'Yes' ? '#d32f2f' : '#388e3c'}; font-weight: bold;">
-            ${entry.reimbursement}
-          </span>
-        </p>
-        <p style="margin: 5px 0; color: #666; font-size: 14px;">
-          <strong>Request ID:</strong> ${entry.requestId}
-        </p>
-      </div>
-    `;
-  });
-  
-  // Action Required section
-  const actionSection = `
-    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 20px; margin: 25px 0;">
-      <h3 style="margin: 0 0 15px 0; color: #856404; font-size: 18px;">Action Required</h3>
-      <div style="background: white; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
-        <p style="margin: 0; color: #333; font-weight: bold;">
-          ${emailConfig.managerName || 'Manager'}: Please review and update approvals in the spreadsheet
-        </p>
-        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
-          Change status from "Pending" to "Approved" or "Rejected" as needed
-        </p>
-      </div>
-      ${emailConfig.ccHr ? `
-      <div style="background: #e8f5e8; padding: 15px; border-radius: 5px;">
-        <p style="margin: 0; color: #333; font-weight: bold;">
-          ${emailConfig.hrName || 'HR'}: No action needed - for your information only
-        </p>
-        <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">
-          You will be notified when approvals are processed
-        </p>
-      </div>
-      ` : ''}
-    </div>
-  `;
+  // Create approve URL (will be handled by web app)
+  const approveUrl = `${getWebAppUrl()}?action=approve&requestId=${requestId}`;
   
   return `
-    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; background-color: #f5f5f5;">
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f5f5f5;">
       <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
         
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, #1976d2, #42a5f5); color: white; padding: 25px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">Visit Approvals Required</h1>
+        <!-- Header - Yellow/Pending Theme -->
+        <div style="background: linear-gradient(135deg, #ffa726, #ffb74d); color: white; padding: 25px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">Visit Log Approval Required</h1>
           <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
-            ${pendingEntries.length} entries awaiting approval
+            ⏳ New submission awaiting approval
           </p>
         </div>
         
@@ -133,39 +77,362 @@ function createBatchEmailBody(pendingEntries, emailConfig) {
           <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
             Hi ${emailConfig.managerName || 'Manager'},
           </p>
+          
           <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-            You have <strong>${pendingEntries.length}</strong> visit log entries pending approval:
+            A new visit log entry has been submitted and requires your approval:
           </p>
           
-          ${entriesHtml}
+          <!-- Entry Details -->
+          <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 15px 0; background: #fafafa;">
+            <h3 style="margin: 0 0 10px 0; color: #2c5aa0; font-size: 18px;">
+              ${formData.employeeName} (${visitDateFormatted}, ${timeRange})
+            </h3>
+            <p style="margin: 5px 0; color: #333;">
+              <strong>Companies:</strong> ${formData.companies}
+            </p>
+            <p style="margin: 5px 0; color: #333;">
+              <strong>Purpose:</strong> ${formData.purpose}
+            </p>
+            <p style="margin: 5px 0; color: #333;">
+              <strong>Description:</strong> ${formData.description || 'N/A'}
+            </p>
+            <p style="margin: 5px 0; color: #333;">
+              <strong>Reimbursement Flag:</strong> 
+              <span style="color: ${formData.reimbursement === 'Yes' ? '#f57c00' : '#388e3c'}; font-weight: bold;">
+                ${formData.reimbursement}
+              </span>
+            </p>
+            <p style="margin: 5px 0; color: #666; font-size: 14px;">
+              <strong>Request ID:</strong> ${requestId}
+            </p>
+          </div>
           
-          ${actionSection}
-          
-          <!-- Action Button -->
+          <!-- Approve Button - Green -->
           <div style="text-align: center; margin: 30px 0;">
-            <a href="${spreadsheetUrl}" 
-               style="display: inline-block; background-color: #1976d2; color: white; padding: 15px 30px; 
+            <a href="${approveUrl}" 
+               style="display: inline-block; background-color: #4caf50; color: white; padding: 15px 30px; 
                       text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
-              REVIEW & APPROVE IN GOOGLE SHEETS
+              ✅ APPROVE REQUEST
             </a>
           </div>
           
-          <!-- Instructions -->
+          <!-- Instructions - Blue -->
           <div style="background: #e3f2fd; border-left: 4px solid #1976d2; padding: 20px; margin: 25px 0;">
-            <h3 style="margin: 0 0 15px 0; color: #1976d2;">Instructions:</h3>
+            <h3 style="margin: 0 0 15px 0; color: #1976d2;">Action Required:</h3>
             <ul style="margin: 0; padding-left: 20px; color: #333; line-height: 1.6;">
-              <li>Open the <strong>Logs</strong> sheet or employee tabs</li>
-              <li>Change Status from <strong>"Pending"</strong> to <strong>"Approved"</strong> or <strong>"Rejected"</strong></li>
-              <li>Click "Send Confirmation Emails" button when ready to notify employees</li>
+              <li>Click <strong>"APPROVE REQUEST"</strong> to approve this visit log</li>
+              <li>For rejections or issues, please update the status manually in the <a href="${spreadsheetUrl}" style="color: #1976d2;">Google Sheets</a></li>
+              <li>Employee and HR will be automatically notified upon approval</li>
             </ul>
+          </div>
+          
+          <!-- Note - Yellow -->
+          <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #856404; font-size: 14px;">
+              <strong>Note:</strong> This email only contains an APPROVE button. For rejections or complex issues, please handle them manually in the spreadsheet.
+            </p>
           </div>
         </div>
         
         <!-- Footer -->
         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
           <p style="margin: 0;">
-            <strong>Automated notification from ${emailConfig.company || 'Company'} Visit Logging System</strong><br>
-            This email is sent when there are pending approvals
+            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong><br>
+            This email is sent immediately when a valid employee submits a visit log
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Send employee confirmation email when approved - Green theme
+ */
+function sendEmployeeConfirmationEmail(requestId, employeeEmail, employeeName) {
+  try {
+    console.log('=== SENDING EMPLOYEE CONFIRMATION EMAIL ===');
+    
+    // Check if emails are enabled (respect debug_mode)
+    if (!isEmailEnabled()) {
+      console.log('Emails disabled in debug mode - skipping employee confirmation email');
+      return;
+    }
+    
+    // Get entry details from logs
+    const entryDetails = getEntryDetailsByRequestId(requestId);
+    if (!entryDetails) {
+      console.error('Entry details not found for request ID:', requestId);
+      return;
+    }
+    
+    // Get email configuration
+    const emailConfig = getEmailAddresses();
+    
+    const subject = `[APPROVED] Your Visit Log Request - ${requestId}`;
+    const emailBody = createEmployeeConfirmationEmailBody(entryDetails, emailConfig);
+    
+    const emailOptions = {
+      htmlBody: emailBody,
+      name: `${emailConfig.company} Visit Logging System`
+    };
+    
+    GmailApp.sendEmail(employeeEmail, subject, '', emailOptions);
+    console.log(`✅ Employee confirmation email sent to: ${employeeEmail}`);
+    
+    console.log('=== EMPLOYEE CONFIRMATION EMAIL COMPLETE ===');
+    
+  } catch (error) {
+    console.error('Error sending employee confirmation email:', error);
+  }
+}
+
+/**
+ * Send HR notification email when approved - Green theme (notification only)
+ */
+function sendHRNotificationEmail(requestId, employeeEmail, employeeName) {
+  try {
+    console.log('=== SENDING HR NOTIFICATION EMAIL ===');
+    
+    // Check if emails are enabled (respect debug_mode)
+    if (!isEmailEnabled()) {
+      console.log('Emails disabled in debug mode - skipping HR notification email');
+      return;
+    }
+    
+    // Get email configuration
+    const emailConfig = getEmailAddresses();
+    
+    // Only send if HR email is configured and CC HR is enabled
+    if (!emailConfig.hr || !emailConfig.ccHr) {
+      console.log('HR email not configured or CC HR disabled - skipping HR notification');
+      return;
+    }
+    
+    // Get entry details from logs
+    const entryDetails = getEntryDetailsByRequestId(requestId);
+    if (!entryDetails) {
+      console.error('Entry details not found for request ID:', requestId);
+      return;
+    }
+    
+    const subject = `[HR NOTIFICATION] Visit Log Approved - ${employeeName}`;
+    const emailBody = createHRNotificationEmailBody(entryDetails, emailConfig);
+    
+    const emailOptions = {
+      htmlBody: emailBody,
+      name: `${emailConfig.company} Visit Logging System`
+    };
+    
+    GmailApp.sendEmail(emailConfig.hr, subject, '', emailOptions);
+    console.log(`✅ HR notification email sent to: ${emailConfig.hr}`);
+    
+    console.log('=== HR NOTIFICATION EMAIL COMPLETE ===');
+    
+  } catch (error) {
+    console.error('Error sending HR notification email:', error);
+  }
+}
+
+/**
+ * Get entry details by request ID from Logs sheet
+ */
+function getEntryDetailsByRequestId(requestId) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet();
+    const logsSheet = sheet.getSheetByName(SHEET_NAMES.LOGS);
+    
+    if (!logsSheet) return null;
+    
+    const lastRow = logsSheet.getLastRow();
+    if (lastRow <= 1) return null;
+    
+    const data = logsSheet.getRange(2, 1, lastRow - 1, 14).getValues();
+    
+    for (let i = 0; i < data.length; i++) {
+      if (data[i][0] === requestId) {
+        return {
+          requestId: data[i][0],
+          timestamp: data[i][1],
+          employeeName: data[i][2],
+          employeeEmail: data[i][3],
+          visitDate: data[i][4],
+          startTime: data[i][5],
+          endTime: data[i][6],
+          purpose: data[i][7],
+          reimbursement: data[i][8],
+          description: data[i][9],
+          companies: data[i][10],
+          status: data[i][11]
+        };
+      }
+    }
+    
+    return null;
+    
+  } catch (error) {
+    console.error('Error getting entry details:', error);
+    return null;
+  }
+}
+
+/**
+ * Create employee confirmation email body - Green theme
+ */
+function createEmployeeConfirmationEmailBody(entryDetails, emailConfig) {
+  const spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  const visitDateFormatted = formatDate(entryDetails.visitDate);
+  const timeRange = `${formatTime(entryDetails.startTime)} - ${formatTime(entryDetails.endTime)}`;
+  
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f5f5f5;">
+      <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+        
+        <!-- Header - Green Theme -->
+        <div style="background: linear-gradient(135deg, #4caf50, #81c784); color: white; padding: 25px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">Visit Log Approved ✅</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+            Your request has been approved by management
+          </p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 30px;">
+          <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
+            Hi ${entryDetails.employeeName},
+          </p>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+            Great news! Your visit log entry has been approved by ${emailConfig.managerName}:
+          </p>
+          
+          <!-- Entry Details - Green border -->
+          <div style="border: 1px solid #4caf50; border-radius: 8px; padding: 15px; margin: 10px 0; background: #f8fff8;">
+            <h4 style="margin: 0 0 10px 0; color: #4caf50;">✅ Approved</h4>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${visitDateFormatted}</p>
+            <p style="margin: 5px 0;"><strong>Time:</strong> ${timeRange}</p>
+            <p style="margin: 5px 0;"><strong>Companies:</strong> ${entryDetails.companies}</p>
+            <p style="margin: 5px 0;"><strong>Purpose:</strong> ${entryDetails.purpose}</p>
+            <p style="margin: 5px 0;"><strong>Reimbursement Flag:</strong> ${entryDetails.reimbursement}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Request ID:</strong> ${entryDetails.requestId}</p>
+          </div>
+          
+          <!-- Next Steps - Green theme -->
+          <div style="background: #e8f5e8; border-left: 4px solid #4caf50; padding: 20px; margin: 25px 0;">
+            <h3 style="margin: 0 0 15px 0; color: #2e7d32;">Next Steps:</h3>
+            <ul style="margin: 0; padding-left: 20px; color: #333; line-height: 1.6;">
+              <li>Your visit log has been recorded in your personal activity report</li>
+              <li>HR has been notified for record keeping purposes</li>
+              <li>You can view your complete activity report using the link below</li>
+            </ul>
+          </div>
+          
+          <!-- View Report Button - Blue -->
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${spreadsheetUrl}" 
+               style="display: inline-block; background-color: #1976d2; color: white; padding: 12px 25px; 
+                      text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
+              📊 VIEW YOUR ACTIVITY REPORT
+            </a>
+          </div>
+          
+          <!-- HR Notification - Blue -->
+          <div style="background: #e3f2fd; border: 1px solid #bbdefb; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #1976d2; font-size: 14px;">
+              <strong>HR Notification:</strong> HR has been automatically notified of this approval for record keeping purposes.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
+          <p style="margin: 0;">
+            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong><br>
+            This email is sent when your visit log request is approved
+          </p>
+        </div>
+        
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Create HR notification email body - Green theme (notification only)
+ */
+function createHRNotificationEmailBody(entryDetails, emailConfig) {
+  const spreadsheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
+  const visitDateFormatted = formatDate(entryDetails.visitDate);
+  const timeRange = `${formatTime(entryDetails.startTime)} - ${formatTime(entryDetails.endTime)}`;
+  
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f5f5f5;">
+      <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+        
+        <!-- Header - Green Theme -->
+        <div style="background: linear-gradient(135deg, #4caf50, #81c784); color: white; padding: 25px; text-align: center;">
+          <h1 style="margin: 0; font-size: 24px;">HR Notification - Visit Log Approved</h1>
+          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+            ✅ Employee visit request approved by management
+          </p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 30px;">
+          <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
+            Hi ${emailConfig.hrName},
+          </p>
+          
+          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+            This is an automated notification that a visit log entry has been approved by management:
+          </p>
+          
+          <!-- Entry Details - Green border -->
+          <div style="border: 1px solid #4caf50; border-radius: 8px; padding: 15px; margin: 10px 0; background: #f8fff8;">
+            <h4 style="margin: 0 0 10px 0; color: #4caf50;">📋 Approved Visit Log</h4>
+            <p style="margin: 5px 0;"><strong>Employee:</strong> ${entryDetails.employeeName}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${visitDateFormatted}</p>
+            <p style="margin: 5px 0;"><strong>Time:</strong> ${timeRange}</p>
+            <p style="margin: 5px 0;"><strong>Companies:</strong> ${entryDetails.companies}</p>
+            <p style="margin: 5px 0;"><strong>Purpose:</strong> ${entryDetails.purpose}</p>
+            <p style="margin: 5px 0;"><strong>Reimbursement Flag:</strong> 
+              <span style="color: #4caf50; font-weight: bold;">${entryDetails.reimbursement}</span>
+            </p>
+            <p style="margin: 5px 0;"><strong>Approved by:</strong> ${emailConfig.managerName}</p>
+            <p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Request ID:</strong> ${entryDetails.requestId}</p>
+          </div>
+          
+          <!-- Information Notice - Green -->
+          <div style="background: #e8f5e8; border: 1px solid #c8e6c9; border-radius: 6px; padding: 15px; margin: 15px 0;">
+            <h4 style="margin: 0 0 10px 0; color: #2e7d32;">ℹ️ For Your Information</h4>
+            <p style="margin: 0; color: #333;">
+              <strong>No Action Required:</strong> This is a notification only. The visit log has been approved and recorded in the employee's activity report.
+            </p>
+          </div>
+          
+          <!-- View Report Button - Blue -->
+          <div style="text-align: center; margin: 25px 0;">
+            <a href="${spreadsheetUrl}" 
+               style="display: inline-block; background-color: #1976d2; color: white; padding: 12px 25px; 
+                      text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px;">
+              📊 VIEW EMPLOYEE ACTIVITY REPORT
+            </a>
+          </div>
+          
+          <!-- Employee Notified - Green -->
+          <div style="background: #e8f5e8; border: 1px solid #c8e6c9; border-radius: 8px; padding: 15px; margin: 20px 0;">
+            <p style="margin: 0; color: #2e7d32; font-size: 14px;">
+              <strong>Employee Notified:</strong> ${entryDetails.employeeName} has been automatically notified of the approval.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
+          <p style="margin: 0;">
+            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong><br>
+            This email is sent to HR when visit logs are approved by management
           </p>
         </div>
         
@@ -180,7 +447,7 @@ function createBatchEmailBody(pendingEntries, emailConfig) {
 function formatDate(date) {
   try {
     const d = new Date(date);
-    return d.toLocaleDateString('en-US', { 
+    return d.toLocaleDateString('en-GB', { 
       year: 'numeric', 
       month: '2-digit', 
       day: '2-digit' 
@@ -210,714 +477,82 @@ function formatTime(time) {
 }
 
 /**
- * Send daily batch email with all pending entries
+ * Get web app URL for approval links (placeholder - needs to be implemented)
  */
-function sendDailyBatchEmail() {
+function getWebAppUrl() {
+  // TODO: Implement web app for handling approval clicks
+  // For now, return spreadsheet URL
+  return SpreadsheetApp.getActiveSpreadsheet().getUrl();
+}
+
+/**
+ * Handle approval action (called from web app or manual trigger)
+ */
+function handleApprovalAction(requestId) {
   try {
-    console.log('=== DAILY BATCH EMAIL CHECK ===');
+    console.log('=== HANDLING APPROVAL ACTION ===');
+    console.log('Request ID:', requestId);
     
-    // Check if emails are enabled
-    if (!isEmailEnabled()) {
-      console.log('Emails disabled in debug mode - skipping batch email');
-      return;
+    // Update status in Logs sheet
+    const updated = updateRequestStatus(requestId, STATUS.APPROVED);
+    
+    if (!updated) {
+      console.error('Failed to update request status');
+      return false;
     }
     
-    // Get pending entries
-    const pendingEntries = getPendingEntries();
-    
-    if (pendingEntries.length === 0) {
-      console.log('No pending entries found - no email needed');
-      return;
+    // Get entry details for notifications
+    const entryDetails = getEntryDetailsByRequestId(requestId);
+    if (!entryDetails) {
+      console.error('Entry details not found');
+      return false;
     }
     
-    console.log(`Found ${pendingEntries.length} pending entries`);
+    // Send confirmation emails (both green theme)
+    sendEmployeeConfirmationEmail(requestId, entryDetails.employeeEmail, entryDetails.employeeName);
+    sendHRNotificationEmail(requestId, entryDetails.employeeEmail, entryDetails.employeeName);
     
-    // Get email configuration
-    const emailConfig = getEmailAddresses();
-    
-    if (!emailConfig.manager) {
-      console.error('Manager email not configured - cannot send batch email');
-      return;
-    }
-    
-    // Create and send email
-    const subject = `[MANAGER ACTION] Daily Visit Approvals Required - ${pendingEntries.length} entries pending`;
-    const emailBody = createBatchEmailBody(pendingEntries, emailConfig);
-    
-    const emailOptions = {
-      htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
-    };
-    
-    GmailApp.sendEmail(emailConfig.manager, subject, '', emailOptions);
-    console.log(`✅ Daily batch email sent to: ${emailConfig.manager}`);
-    
-    // Send copy to HR if configured
-    if (emailConfig.ccHr && emailConfig.hr && emailConfig.hr.trim() !== '') {
-      const hrSubject = `[HR NOTIFICATION] Daily Visit Approvals Required - ${pendingEntries.length} entries pending`;
-      GmailApp.sendEmail(emailConfig.hr, hrSubject, '', emailOptions);
-      console.log(`✅ CC sent to HR: ${emailConfig.hr}`);
-    }
-    
-    console.log('=== DAILY BATCH EMAIL COMPLETE ===');
+    console.log('✅ Approval action completed successfully');
+    return true;
     
   } catch (error) {
-    console.error('Error sending daily batch email:', error);
+    console.error('Error handling approval action:', error);
+    return false;
   }
 }
 
 /**
- * Manual email button function
+ * Update request status in Logs sheet
  */
-function sendEmailButton() {
-  console.log('=== MANUAL EMAIL BUTTON CLICKED ===');
-  
-  try {
-    // Check if emails are enabled
-    if (!isEmailEnabled()) {
-      const ui = SpreadsheetApp.getUi();
-      ui.alert('Emails Disabled', 'Email sending is disabled in debug mode (Config B9 = FALSE)', ui.ButtonSet.OK);
-      return;
-    }
-    
-    // Check timeout
-    if (!canSendEmail()) {
-      const ui = SpreadsheetApp.getUi();
-      ui.alert('Please Wait', 'Email was sent recently. Please wait 1 minute before sending again.', ui.ButtonSet.OK);
-      return;
-    }
-    
-    // Get pending entries
-    const pendingEntries = getPendingEntries();
-    
-    if (pendingEntries.length === 0) {
-      const ui = SpreadsheetApp.getUi();
-      ui.alert('No Pending Entries', 'There are no pending visit log entries to approve.', ui.ButtonSet.OK);
-      return;
-    }
-    
-    // Get email configuration
-    const emailConfig = getEmailAddresses();
-    
-    if (!emailConfig.manager) {
-      const ui = SpreadsheetApp.getUi();
-      ui.alert('Configuration Error', 'Manager email not configured. Please check Config sheet.', ui.ButtonSet.OK);
-      return;
-    }
-    
-    // Send email
-    const subject = `[MANAGER ACTION] Visit Approvals Required - ${pendingEntries.length} entries pending`;
-    const emailBody = createBatchEmailBody(pendingEntries, emailConfig);
-    
-    const emailOptions = {
-      htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
-    };
-    
-    // Add CC if enabled and HR email exists
-    if (emailConfig.ccHr && emailConfig.hr && emailConfig.hr.trim() !== '') {
-      emailOptions.cc = emailConfig.hr;
-      console.log(`CC enabled - adding HR: ${emailConfig.hr}`);
-    }
-    
-    GmailApp.sendEmail(emailConfig.manager, subject, '', emailOptions);
-    
-    // Record email sent time
-    recordEmailSent();
-    
-    // Show success message
-    const ui = SpreadsheetApp.getUi();
-    const ccMessage = emailConfig.ccHr ? `\nCC: ${emailConfig.hr}` : '';
-    ui.alert('Email Sent!', `Approval email sent successfully.\n\nEntries: ${pendingEntries.length}\nTo: ${emailConfig.manager}${ccMessage}`, ui.ButtonSet.OK);
-    
-    console.log(`✅ Email sent - Manager: ${emailConfig.manager}, CC HR: ${emailConfig.ccHr}`);
-    
-  } catch (error) {
-    console.error('Error sending manual email:', error);
-    
-    const ui = SpreadsheetApp.getUi();
-    ui.alert('Email Error', 'Failed to send email. Check the logs for details.', ui.ButtonSet.OK);
-  }
-  
-  console.log('=== MANUAL EMAIL BUTTON COMPLETE ===');
-}
-
-/**
- * Manual confirmation email button - sends all pending confirmations
- */
-function sendConfirmationEmailsButton() {
-  console.log('=== MANUAL CONFIRMATION EMAIL BUTTON CLICKED ===');
-  
-  try {
-    // Check if emails are enabled
-    if (!isEmailEnabled()) {
-      const ui = SpreadsheetApp.getUi();
-      ui.alert('Emails Disabled', 'Email sending is disabled in debug mode (Config B9 = FALSE)', ui.ButtonSet.OK);
-      return;
-    }
-    
-    // Get all entries that need confirmation emails (approved/rejected but not yet notified)
-    const pendingConfirmations = getPendingConfirmations();
-    
-    if (pendingConfirmations.length === 0) {
-      const ui = SpreadsheetApp.getUi();
-      ui.alert('No Confirmations Needed', 'There are no approved/rejected entries that need confirmation emails.', ui.ButtonSet.OK);
-      return;
-    }
-    
-    console.log(`Found ${pendingConfirmations.length} entries needing confirmation`);
-    
-    // Group by employee
-    const confirmationsByEmployee = groupConfirmationsByEmployee(pendingConfirmations);
-    
-    let emailsSent = 0;
-    
-    // Send confirmation email to each employee
-    Object.keys(confirmationsByEmployee).forEach(employeeEmail => {
-      sendEmployeeConfirmation(employeeEmail, confirmationsByEmployee[employeeEmail]);
-      emailsSent++;
-    });
-    
-    // Send summary to HR
-    const emailConfig = getEmailAddresses();
-    if (emailConfig.ccHr && emailConfig.hr) {
-      sendHRConfirmationSummary(pendingConfirmations);
-      emailsSent++;
-    }
-    
-    // Mark entries as notified
-    markEntriesAsNotified(pendingConfirmations);
-    
-    // Show success message
-    const ui = SpreadsheetApp.getUi();
-    const employeeCount = Object.keys(confirmationsByEmployee).length;
-    const hrMessage = (emailConfig.ccHr && emailConfig.hr) ? '\nHR summary sent' : '';
-    
-    ui.alert(
-      'Confirmation Emails Sent!', 
-      `Successfully sent confirmation emails:\n\n` +
-      `• ${employeeCount} employees notified\n` +
-      `• ${pendingConfirmations.length} entries confirmed${hrMessage}`, 
-      ui.ButtonSet.OK
-    );
-    
-    console.log(`✅ Confirmation emails sent - ${emailsSent} emails total`);
-    
-  } catch (error) {
-    console.error('Error sending confirmation emails:', error);
-    
-    const ui = SpreadsheetApp.getUi();
-    ui.alert('Email Error', 'Failed to send confirmation emails. Check the logs for details.', ui.ButtonSet.OK);
-  }
-  
-  console.log('=== MANUAL CONFIRMATION EMAIL COMPLETE ===');
-}
-
-/**
- * Get entries that are approved/rejected but haven't been notified yet
- */
-function getPendingConfirmations() {
+function updateRequestStatus(requestId, newStatus) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet();
     const logsSheet = sheet.getSheetByName(SHEET_NAMES.LOGS);
     
-    if (!logsSheet) return [];
+    if (!logsSheet) return false;
     
     const lastRow = logsSheet.getLastRow();
-    if (lastRow <= 1) return [];
+    if (lastRow <= 1) return false;
     
-    const data = logsSheet.getRange(2, 1, lastRow - 1, 14).getValues();
-    const pendingConfirmations = [];
-    
-    data.forEach((row, index) => {
-      const status = row[11]; // Status column
-      const comments = row[13]; // Comments column
+    // Find the row with matching request ID
+    for (let row = 2; row <= lastRow; row++) {
+      const cellRequestId = logsSheet.getRange(row, 1).getValue();
       
-      // Check if status is approved/rejected AND not already notified
-      if ((status === 'Approved' || status === 'Rejected') && 
-          (!comments || !comments.includes('NOTIFIED'))) {
+      if (cellRequestId === requestId) {
+        // Update status (column 12) and action date (column 13)
+        logsSheet.getRange(row, 12).setValue(newStatus);
+        logsSheet.getRange(row, 13).setValue(new Date());
         
-        pendingConfirmations.push({
-          requestId: row[0],
-          employeeEmail: row[2],
-          employeeName: row[3],
-          visitDate: row[4],
-          startTime: row[5],
-          endTime: row[6],
-          purpose: row[7],
-          reimbursement: row[8],
-          description: row[9],
-          companies: row[10],
-          status: row[11],
-          actionDate: row[12],
-          rowNumber: index + 2 // For updating later
-        });
+        console.log(`Updated request ${requestId} to status: ${newStatus}`);
+        return true;
       }
-    });
-    
-    console.log(`Found ${pendingConfirmations.length} entries needing confirmation`);
-    return pendingConfirmations;
-    
-  } catch (error) {
-    console.error('Error getting pending confirmations:', error);
-    return [];
-  }
-}
-
-/**
- * Group confirmations by employee email
- */
-function groupConfirmationsByEmployee(confirmations) {
-  const grouped = {};
-  
-  confirmations.forEach(confirmation => {
-    if (!grouped[confirmation.employeeEmail]) {
-      grouped[confirmation.employeeEmail] = [];
-    }
-    grouped[confirmation.employeeEmail].push(confirmation);
-  });
-  
-  return grouped;
-}
-
-/**
- * Send confirmation email to employee
- */
-function sendEmployeeConfirmation(employeeEmail, confirmations) {
-  try {
-    const emailConfig = getEmailAddresses();
-    const employeeName = confirmations[0].employeeName;
-    
-    const approvedCount = confirmations.filter(c => c.status === 'Approved').length;
-    const rejectedCount = confirmations.filter(c => c.status === 'Rejected').length;
-    
-    const subject = `[VISIT LOG] Status Update - ${approvedCount} Approved, ${rejectedCount} Rejected`;
-    const emailBody = createEmployeeConfirmationEmailBody(employeeName, confirmations, emailConfig);
-    
-    const emailOptions = {
-      htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
-    };
-    
-    GmailApp.sendEmail(employeeEmail, subject, '', emailOptions);
-    console.log(`✅ Confirmation sent to: ${employeeEmail} (${confirmations.length} entries)`);
-    
-  } catch (error) {
-    console.error('Error sending employee confirmation:', error);
-  }
-}
-
-/**
- * Send HR confirmation summary
- */
-function sendHRConfirmationSummary(allConfirmations) {
-  try {
-    const emailConfig = getEmailAddresses();
-    
-    const approvedCount = allConfirmations.filter(c => c.status === 'Approved').length;
-    const rejectedCount = allConfirmations.filter(c => c.status === 'Rejected').length;
-    
-    const subject = `[HR NOTIFICATION] Visit Log Summary - ${approvedCount} Approved, ${rejectedCount} Rejected`;
-    const emailBody = createHRConfirmationEmailBody(allConfirmations, emailConfig);
-    
-    const emailOptions = {
-      htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
-    };
-    
-    GmailApp.sendEmail(emailConfig.hr, subject, '', emailOptions);
-    console.log(`✅ HR summary sent to: ${emailConfig.hr} (${allConfirmations.length} entries)`);
-    
-  } catch (error) {
-    console.error('Error sending HR summary:', error);
-  }
-}
-
-/**
- * Create employee confirmation email body
- */
-function createEmployeeConfirmationEmailBody(employeeName, confirmations, emailConfig) {
-  let entriesHtml = '';
-  
-  confirmations.forEach(confirmation => {
-    const isApproved = confirmation.status === 'Approved';
-    const statusColor = isApproved ? '#4caf50' : '#f44336';
-    const statusIcon = isApproved ? '✅' : '❌';
-    const visitDateFormatted = formatDate(confirmation.visitDate);
-    const timeRange = `${formatTime(confirmation.startTime)} - ${formatTime(confirmation.endTime)}`;
-    
-    entriesHtml += `
-      <div style="border: 1px solid ${statusColor}; border-radius: 8px; padding: 15px; margin: 10px 0; background: #fafafa;">
-        <h4 style="margin: 0 0 10px 0; color: ${statusColor};">${statusIcon} ${confirmation.status}</h4>
-        <p style="margin: 5px 0;"><strong>Date:</strong> ${visitDateFormatted}</p>
-        <p style="margin: 5px 0;"><strong>Time:</strong> ${timeRange}</p>
-        <p style="margin: 5px 0;"><strong>Companies:</strong> ${confirmation.companies}</p>
-        <p style="margin: 5px 0;"><strong>Purpose:</strong> ${confirmation.purpose}</p>
-        <p style="margin: 5px 0; font-size: 12px; color: #666;"><strong>Request ID:</strong> ${confirmation.requestId}</p>
-      </div>
-    `;
-  });
-  
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f5f5f5;">
-      <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
-        
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, #1976d2, #42a5f5); color: white; padding: 25px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">Visit Log Status Update</h1>
-          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
-            ${confirmations.length} entries processed
-          </p>
-        </div>
-        
-        <!-- Content -->
-        <div style="padding: 30px;">
-          <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
-            Hi ${employeeName},
-          </p>
-          
-          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-            Your visit log entries have been reviewed:
-          </p>
-          
-          ${entriesHtml}
-        </div>
-        
-        <!-- Footer -->
-        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
-          <p style="margin: 0;">
-            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong>
-          </p>
-        </div>
-        
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Create HR confirmation email body
- */
-function createHRConfirmationEmailBody(allConfirmations, emailConfig) {
-  const approvedCount = allConfirmations.filter(c => c.status === 'Approved').length;
-  const rejectedCount = allConfirmations.filter(c => c.status === 'Rejected').length;
-  
-  // Group by employee
-  const byEmployee = groupConfirmationsByEmployee(allConfirmations);
-  
-  let summaryHtml = '';
-  Object.keys(byEmployee).forEach(employeeEmail => {
-    const employeeConfirmations = byEmployee[employeeEmail];
-    const employeeName = employeeConfirmations[0].employeeName;
-    const empApproved = employeeConfirmations.filter(c => c.status === 'Approved').length;
-    const empRejected = employeeConfirmations.filter(c => c.status === 'Rejected').length;
-    
-    summaryHtml += `
-      <div style="border: 1px solid #ddd; border-radius: 5px; padding: 10px; margin: 5px 0;">
-        <strong>${employeeName}</strong>: ${empApproved} approved, ${empRejected} rejected
-      </div>
-    `;
-  });
-  
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f5f5f5;">
-      <div style="background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
-        
-        <!-- Header -->
-        <div style="background: linear-gradient(135deg, #4caf50, #81c784); color: white; padding: 25px; text-align: center;">
-          <h1 style="margin: 0; font-size: 24px;">Visit Log Processing Summary</h1>
-          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
-            ${approvedCount} approved, ${rejectedCount} rejected
-          </p>
-        </div>
-        
-        <!-- Content -->
-        <div style="padding: 30px;">
-          <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
-            Hi ${emailConfig.hrName || 'HR Team'},
-          </p>
-          
-          <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-            Visit log entries have been processed and employees have been notified:
-          </p>
-          
-          ${summaryHtml}
-        </div>
-        
-        <!-- Footer -->
-        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
-          <p style="margin: 0;">
-            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong>
-          </p>
-        </div>
-        
-      </div>
-    </div>
-  `;
-}
-
-/**
- * Mark entries as notified in the Logs sheet
- */
-function markEntriesAsNotified(entries) {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet();
-    const logsSheet = sheet.getSheetByName(SHEET_NAMES.LOGS);
-    
-    if (!logsSheet) return;
-    
-    const timestamp = new Date().toLocaleString();
-    
-    entries.forEach(entry => {
-      // Update comments column to mark as notified
-      const currentComments = logsSheet.getRange(entry.rowNumber, 14).getValue() || '';
-      const newComments = currentComments + (currentComments ? '; ' : '') + `NOTIFIED ${timestamp}`;
-      logsSheet.getRange(entry.rowNumber, 14).setValue(newComments);
-    });
-    
-    console.log(`Marked ${entries.length} entries as notified`);
-    
-  } catch (error) {
-    console.error('Error marking entries as notified:', error);
-  }
-}
-
-/**
- * Set up daily email trigger for manager batch emails only
- */
-function setupDailyManagerEmailTrigger() {
-  try {
-    console.log('=== SETTING UP DAILY MANAGER EMAIL TRIGGER ===');
-    
-    // Delete existing triggers
-    const triggers = ScriptApp.getProjectTriggers();
-    triggers.forEach(trigger => {
-      if (trigger.getHandlerFunction() === 'sendDailyBatchEmail' || 
-          trigger.getHandlerFunction() === 'sendDailyConfirmationEmails') {
-        ScriptApp.deleteTrigger(trigger);
-        console.log(`Deleted existing trigger: ${trigger.getHandlerFunction()}`);
-      }
-    });
-    
-    // Get configured email time
-    const militaryTime = getEmailTime();
-    const { hour, minute } = parseMilitaryTime(militaryTime);
-    
-    // Create ONLY manager batch email trigger
-    ScriptApp.newTrigger('sendDailyBatchEmail')
-      .timeBased()
-      .everyDays(1)
-      .atHour(hour)
-      .nearMinute(minute)
-      .create();
-    
-    console.log(`✅ Manager batch email trigger: ${hour}:${minute.toString().padStart(2, '0')}`);
-    console.log('=== TRIGGER SETUP COMPLETE ===');
-    
-  } catch (error) {
-    console.error('Error setting up daily trigger:', error);
-  }
-}
-
-// Add these functions to your email_system.gs file:
-
-function createEmployeeBatchEmailBody(entries, companyName) {
-  console.log('Debug', `Creating employee batch email body for ${entries.length} entries`);
-  
-  let html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-        <h2 style="color: #333; margin: 0;">Visit Status Updates</h2>
-        <p style="color: #666; margin: 10px 0 0 0;">Dear Team Member,</p>
-      </div>
-      
-      <div style="background-color: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <p>The following visit requests have been processed:</p>
-        
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <thead>
-            <tr style="background-color: #f1f3f4;">
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Date</th>
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Employee</th>
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Purpose</th>
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Status</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
-  entries.forEach(entry => {
-    const statusColor = entry.status === 'Approved' ? '#28a745' : '#dc3545';
-    const statusIcon = entry.status === 'Approved' ? '✅' : '❌';
-    
-    html += `
-            <tr>
-              <td style="padding: 12px; border: 1px solid #ddd;">${entry.visitDate}</td>
-              <td style="padding: 12px; border: 1px solid #ddd;">${entry.employeeName}</td>
-              <td style="padding: 12px; border: 1px solid #ddd;">${entry.purpose}</td>
-              <td style="padding: 12px; border: 1px solid #ddd; color: ${statusColor}; font-weight: bold;">
-                ${statusIcon} ${entry.status}
-              </td>
-            </tr>`;
-  });
-
-  html += `
-          </tbody>
-        </table>
-        
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-          <p style="color: #666; font-size: 14px; margin: 0;">
-            This is an automated notification from the ${companyName} Employee Visit System.
-          </p>
-          <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
-            If you have any questions, please contact your manager or HR department.
-          </p>
-        </div>
-      </div>
-    </div>`;
-
-  return html;
-}
-
-function createHRBatchEmailBody(entries, companyName) {
-  console.log('Debug', `Creating HR batch email body for ${entries.length} entries`);
-  
-  const approvedCount = entries.filter(e => e.status === 'Approved').length;
-  const rejectedCount = entries.filter(e => e.status === 'Rejected').length;
-  
-  let html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-        <h2 style="color: #333; margin: 0;">HR Summary: Visit Status Updates</h2>
-        <p style="color: #666; margin: 10px 0 0 0;">Batch confirmation summary</p>
-      </div>
-      
-      <div style="background-color: white; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-          <h3 style="margin: 0 0 10px 0; color: #1976d2;">Summary</h3>
-          <p style="margin: 5px 0;"><strong>Total Processed:</strong> ${entries.length}</p>
-          <p style="margin: 5px 0; color: #28a745;"><strong>Approved:</strong> ${approvedCount}</p>
-          <p style="margin: 5px 0; color: #dc3545;"><strong>Rejected:</strong> ${rejectedCount}</p>
-        </div>
-        
-        <h3 style="color: #333; margin-bottom: 15px;">Detailed Breakdown</h3>
-        
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <thead>
-            <tr style="background-color: #f1f3f4;">
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Request ID</th>
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Date</th>
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Employee</th>
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Purpose</th>
-              <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Status</th>
-            </tr>
-          </thead>
-          <tbody>`;
-
-  entries.forEach(entry => {
-    const statusColor = entry.status === 'Approved' ? '#28a745' : '#dc3545';
-    const statusIcon = entry.status === 'Approved' ? '✅' : '❌';
-    
-    html += `
-            <tr>
-              <td style="padding: 12px; border: 1px solid #ddd;">${entry.requestId}</td>
-              <td style="padding: 12px; border: 1px solid #ddd;">${entry.visitDate}</td>
-              <td style="padding: 12px; border: 1px solid #ddd;">${entry.employeeName}</td>
-              <td style="padding: 12px; border: 1px solid #ddd;">${entry.purpose}</td>
-              <td style="padding: 12px; border: 1px solid #ddd; color: ${statusColor}; font-weight: bold;">
-                ${statusIcon} ${entry.status}
-              </td>
-            </tr>`;
-  });
-
-  html += `
-          </tbody>
-        </table>
-        
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-          <p style="color: #666; font-size: 14px; margin: 0;">
-            This is an automated HR summary from the ${companyName} Employee Visit System.
-          </p>
-          <p style="color: #666; font-size: 14px; margin: 5px 0 0 0;">
-            All affected employees have been notified of their request status.
-          </p>
-        </div>
-      </div>
-    </div>`;
-
-  return html;
-}
-
-/**
- * Group decisions by employee email (MISSING FUNCTION)
- */
-function groupDecisionsByEmployee(decisions) {
-  const grouped = {};
-  
-  decisions.forEach(decision => {
-    if (!grouped[decision.employeeEmail]) {
-      grouped[decision.employeeEmail] = [];
-    }
-    grouped[decision.employeeEmail].push(decision);
-  });
-  
-  return grouped;
-}
-
-/**
- * Send batch confirmation email to employee
- */
-function sendEmployeeBatchConfirmation(employeeEmail, decisions) {
-  try {
-    const emailConfig = getEmailAddresses();
-    const employeeName = decisions[0].employeeName;
-    
-    const approvedCount = decisions.filter(d => d.status === 'Approved').length;
-    const rejectedCount = decisions.filter(d => d.status === 'Rejected').length;
-    
-    const subject = `[VISIT LOG] Daily Status Update - ${approvedCount} Approved, ${rejectedCount} Rejected`;
-    const emailBody = createEmployeeBatchEmailBody(decisions, emailConfig.company);
-
-    
-    const emailOptions = {
-      htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
-    };
-    
-    GmailApp.sendEmail(employeeEmail, subject, '', emailOptions);
-    console.log(`✅ Batch confirmation sent to: ${employeeEmail} (${decisions.length} entries)`);
-    
-  } catch (error) {
-    console.error('Error sending employee batch confirmation:', error);
-  }
-}
-
-/**
- * Send batch summary to HR
- */
-function sendHRBatchSummary(allDecisions) {
-  try {
-    const emailConfig = getEmailAddresses();
-    
-    if (!emailConfig.ccHr || !emailConfig.hr) {
-      console.log('HR batch summary skipped - not configured');
-      return;
     }
     
-    const approvedCount = allDecisions.filter(d => d.status === 'Approved').length;
-    const rejectedCount = allDecisions.filter(d => d.status === 'Rejected').length;
-    
-    const subject = `[HR NOTIFICATION] Daily Visit Log Summary - ${approvedCount} Approved, ${rejectedCount} Rejected`;
-    const emailBody = createHRBatchEmailBody(allDecisions, emailConfig);
-    
-    const emailOptions = {
-      htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`
-    };
-    
-    GmailApp.sendEmail(emailConfig.hr, subject, '', emailOptions);
-    console.log(`✅ HR batch summary sent to: ${emailConfig.hr} (${allDecisions.length} entries)`);
+    console.error(`Request ID ${requestId} not found in logs`);
+    return false;
     
   } catch (error) {
-    console.error('Error sending HR batch summary:', error);
+    console.error('Error updating request status:', error);
+    return false;
   }
 }

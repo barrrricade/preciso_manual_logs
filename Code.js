@@ -47,6 +47,9 @@ function onFormSubmit(e) {
       };
       
       copyEntryToEmployeeTab(logEntry);
+      
+      // PHASE 2: Send immediate manager approval email
+      sendManagerApprovalEmail(formData, requestId);
     }
     
     console.log('=== FORM SUBMISSION PROCESSED ===');

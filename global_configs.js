@@ -8,18 +8,10 @@ const SHEET_NAMES = {
   TEMPLATE: 'Template'
 };
 
-// Email Configuration (UPDATED for your config structure)
+// Email Configuration - PHASE 2: Simplified (removed timing dependencies)
 const EMAIL_CONFIG = {
-  DEBUG_CELL: 'B9',      // Cell B9 for debug mode TRUE/FALSE
-  TIME_CELL: 'B10',      // Cell B10 for email time (military format)
-  LAST_SENT_CELL: 'B11', // Cell B11 for last email sent (UPDATED)
-  DEFAULT_TIME: '1700'   // Default 5:00 PM if not configured
-};
-
-// Email timeout configuration (UPDATED)
-const EMAIL_TIMEOUT = {
-  LAST_SENT_CELL: 'B11',    // Cell B11 tracks last email sent time (UPDATED)
-  TIMEOUT_MINUTES: 1        // 1 minute timeout
+  DEBUG_CELL: 'B9'      // Cell B9 for debug mode TRUE/FALSE
+  // Removed: TIME_CELL and LAST_SENT_CELL (user deleted from config)
 };
 
 /**
@@ -47,58 +39,8 @@ function isEmailEnabled() {
   }
 }
 
-/**
- * Get configured email time from Config sheet
- */
-function getEmailTime() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet();
-    const configSheet = sheet.getSheetByName(SHEET_NAMES.CONFIG);
-    
-    if (!configSheet) {
-      console.log('Config sheet not found - using default email time');
-      return EMAIL_CONFIG.DEFAULT_TIME;
-    }
-    
-    const timeValue = configSheet.getRange(EMAIL_CONFIG.TIME_CELL).getValue();
-    
-    if (!timeValue || timeValue === '') {
-      console.log('Email time not configured - using default');
-      return EMAIL_CONFIG.DEFAULT_TIME;
-    }
-    
-    const timeString = timeValue.toString();
-    console.log(`Email time configured: ${timeString}`);
-    return timeString;
-    
-  } catch (error) {
-    console.error('Error getting email time:', error);
-    return EMAIL_CONFIG.DEFAULT_TIME;
-  }
-}
-
-/**
- * Parse military time to hour and minute
- */
-function parseMilitaryTime(militaryTime) {
-  try {
-    const timeStr = militaryTime.toString().padStart(4, '0'); // Ensure 4 digits
-    const hour = parseInt(timeStr.substring(0, 2));
-    const minute = parseInt(timeStr.substring(2, 4));
-    
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-      console.error('Invalid military time:', militaryTime);
-      return { hour: 17, minute: 0 }; // Default to 5:00 PM
-    }
-    
-    console.log(`Parsed military time ${militaryTime} -> ${hour}:${minute.toString().padStart(2, '0')}`);
-    return { hour, minute };
-    
-  } catch (error) {
-    console.error('Error parsing military time:', error);
-    return { hour: 17, minute: 0 }; // Default to 5:00 PM
-  }
-}
+// PHASE 2: Removed timing functions (getEmailTime, parseMilitaryTime)
+// No longer needed since user removed email_time config
 
 /**
  * Get manager and HR email addresses from config
@@ -287,62 +229,8 @@ function getEmailAddresses() {
   }
 }
 
-/**
- * Check if email can be sent (timeout protection)
- */
-function canSendEmail() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet();
-    const configSheet = sheet.getSheetByName(SHEET_NAMES.CONFIG);
-    
-    if (!configSheet) return true; // Allow if config not found
-    
-    const lastSentValue = configSheet.getRange(EMAIL_TIMEOUT.LAST_SENT_CELL).getValue();
-    
-    if (!lastSentValue) {
-      console.log('No previous email sent - allowing');
-      return true;
-    }
-    
-    const lastSentTime = new Date(lastSentValue);
-    const now = new Date();
-    const timeDiffMinutes = (now - lastSentTime) / (1000 * 60);
-    
-    console.log(`Last email sent: ${lastSentTime}, Minutes ago: ${timeDiffMinutes.toFixed(1)}`);
-    
-    if (timeDiffMinutes >= EMAIL_TIMEOUT.TIMEOUT_MINUTES) {
-      console.log('Timeout passed - allowing email');
-      return true;
-    } else {
-      const remainingTime = EMAIL_TIMEOUT.TIMEOUT_MINUTES - timeDiffMinutes;
-      console.log(`Timeout active - ${remainingTime.toFixed(1)} minutes remaining`);
-      return false;
-    }
-    
-  } catch (error) {
-    console.error('Error checking email timeout:', error);
-    return true; // Allow on error
-  }
-}
-
-/**
- * Record email sent time
- */
-function recordEmailSent() {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet();
-    const configSheet = sheet.getSheetByName(SHEET_NAMES.CONFIG);
-    
-    if (configSheet) {
-      const now = new Date();
-      configSheet.getRange(EMAIL_TIMEOUT.LAST_SENT_CELL).setValue(now);
-      console.log('Email sent time recorded:', now);
-    }
-    
-  } catch (error) {
-    console.error('Error recording email sent time:', error);
-  }
-}
+// PHASE 2: Removed timeout functions (canSendEmail, recordEmailSent)
+// No longer needed since user removed timing config and wants immediate emails
 
 /**
  * Generate UUID-style Request ID (UPDATED)
