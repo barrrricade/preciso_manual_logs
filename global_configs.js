@@ -81,7 +81,7 @@ function getEmailAddresses() {
 }
 
 /**
- * Get configuration value from Config sheet (UPDATED for A2 start)
+ * Get configuration value from Config sheet (UPDATED: Settings now start at A1)
  */
 function getConfigValue(setting) {
   try {
@@ -90,8 +90,8 @@ function getConfigValue(setting) {
     
     if (!configSheet) return null;
     
-    // Get settings data from Config sheet (A2:B15 to cover your config)
-    const data = configSheet.getRange('A2:B15').getValues();
+    // FIXED: Settings now start at A1:B13 (shifted up by 2 rows)
+    const data = configSheet.getRange('A1:B13').getValues();
     
     for (let i = 0; i < data.length; i++) {
       if (data[i][0] === setting) {
@@ -109,13 +109,13 @@ function getConfigValue(setting) {
   }
 }
 
-// Config Sheet Layout
+// Config Sheet Layout - UPDATED: Employee data shifted up by 2 rows
 const CONFIG_LAYOUT = {
   EMPLOYEES: {
     NAME_COL: 6,        // Column F (1-based) for employee names
     EMAIL_COL: 7,       // Column G (1-based) for employee emails  
-    START_ROW: 2,       // First employee data row (now 2)
-    END_ROW: 20         // Last possible employee row
+    START_ROW: 1,       // First employee data row (shifted up by 2: was 2, now 1)
+    END_ROW: 18         // Last possible employee row (shifted up by 2: was 20, now 18)
   }
 };
 
