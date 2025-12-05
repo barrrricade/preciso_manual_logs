@@ -1,5 +1,5 @@
 // Form Configuration
-const FORM_ID = '1GUShhQOSd5zzefWst5tmYuarwr-zUsi8zhQOwgjR_3g'; // Replace with your real form ID
+const FORM_ID = '1GUShhQOSd5zzefWst5tmYuarwr-zUsi8zhQOwgjR_3g';
 
 // Sheet Configuration  
 const SHEET_NAMES = {
@@ -8,14 +8,13 @@ const SHEET_NAMES = {
   TEMPLATE: 'Template'
 };
 
-// Email Configuration - PHASE 2: Simplified (removed timing dependencies)
+// Email Configuration
 const EMAIL_CONFIG = {
-  DEBUG_CELL: 'B9'      // Cell B9 for debug mode TRUE/FALSE
-  // Removed: TIME_CELL and LAST_SENT_CELL (user deleted from config)
+  DEBUG_CELL: 'B9'
 };
 
 /**
- * Check if email sending is enabled (debug mode) - FIXED: Handle typed columns
+ * Check if email sending is enabled based on debug mode
  */
 function isEmailEnabled() {
   try {
@@ -27,7 +26,7 @@ function isEmailEnabled() {
       return false;
     }
     
-    // Try to get debug_mode from config using getConfigValue instead of direct cell access
+    // Get debug_mode from config
     const debugValue = getConfigValue('debug_mode');
     
     if (debugValue === null) {

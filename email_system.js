@@ -30,13 +30,13 @@ function sendManagerApprovalEmail(formData, requestId) {
     }
     
     // Create approval email
-    const subject = `[APPROVAL REQUIRED] Visit Log Submission - ${formData.employeeName}`;
+    const subject = `[APPROVAL REQUIRED] Manual Logs Automation - ${formData.employeeName}`;
     const emailBody = createManagerApprovalEmailBody(formData, requestId, emailConfig);
     
     const emailOptions = {
       htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`,
-      from: emailConfig.automation  // Send from automation email
+      name: `${emailConfig.company} Manual Logs`,
+      from: emailConfig.automation
     };
     
     // Send email from automation to manager
@@ -138,7 +138,7 @@ function createManagerApprovalEmailBody(formData, requestId, emailConfig) {
         <!-- Footer -->
         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
           <p style="margin: 0;">
-            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong><br>
+            <strong>Automated notification from ${emailConfig.company} Manual Logs</strong><br>
             This email is sent immediately when a valid employee submits a visit log
           </p>
         </div>
@@ -178,13 +178,13 @@ function sendApprovalNotificationEmail(requestId, employeeEmail, employeeName) {
       return;
     }
     
-    const subject = `[APPROVED] Visit Log Notification - ${employeeName} (${requestId})`;
+    const subject = `[APPROVED] Manual Logs Automation - ${employeeName} (${requestId})`;
     const emailBody = createCombinedApprovalEmailBody(entryDetails, emailConfig);
     
     const emailOptions = {
       htmlBody: emailBody,
-      name: `${emailConfig.company} Visit Logging System`,
-      cc: employeeEmail  // Employee gets CC'd for verification
+      name: `${emailConfig.company} Manual Logs`,
+      cc: employeeEmail
     };
     
     // Send from automation email to HR with employee CC'd
@@ -317,7 +317,7 @@ function createCombinedApprovalEmailBody(entryDetails, emailConfig) {
         <!-- Footer -->
         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; color: #666; font-size: 12px;">
           <p style="margin: 0;">
-            <strong>Automated notification from ${emailConfig.company} Visit Logging System</strong><br>
+            <strong>Automated notification from ${emailConfig.company} Manual Logs</strong><br>
             Sent from automation system when visit logs are approved by management
           </p>
         </div>
@@ -571,7 +571,7 @@ function handleApprovalAction(requestId) {
 }
 
 /**
- * Update request status in Logs sheet
+ * Update request status in Logs sheet and Employee tabs
  */
 function updateRequestStatus(requestId, newStatus) {
   try {
@@ -583,25 +583,79 @@ function updateRequestStatus(requestId, newStatus) {
     const lastRow = logsSheet.getLastRow();
     if (lastRow <= 1) return false;
     
-    // Find the row with matching request ID
+    // Find and update Logs sheet
+    let logsUpdated = false;
     for (let row = 2; row <= lastRow; row++) {
       const cellRequestId = logsSheet.getRange(row, 1).getValue();
       
       if (cellRequestId === requestId) {
-        // Update status (column 12) and action date (column 13)
-        logsSheet.getRange(row, 12).setValue(newStatus);
-        logsSheet.getRange(row, 13).setValue(new Date());
+        // Update status (column 14) and remarks with timestamp (column 15)
+        logsSheet.getRange(row, 14).setValue(newStatus);
+        const currentRemarks = logsSheet.getRange(row, 15).getValue() || '';
+        const timestamp = new Date().toLocaleString();
+        const newRemarks = currentRemarks + (currentRemarks ? '; ' : '') + `${newStatus} ${timestamp}`;
+        logsSheet.getRange(row, 15).setValue(newRemarks);
         
-        console.log(`Updated request ${requestId} to status: ${newStatus}`);
-        return true;
+        console.log(`Updated Logs sheet ${requestId} to status: ${newStatus}`);
+        logsUpdated = true;
+        break;
       }
     }
     
-    console.error(`Request ID ${requestId} not found in logs`);
-    return false;
+    // Update Employee tabs
+    const employeeTabsUpdated = updateEmployeeTabsStatus(requestId, newStatus);
+    
+    console.log(`Status update complete - Logs: ${logsUpdated}, Employee tabs: ${employeeTabsUpdated}`);
+    return logsUpdated;
     
   } catch (error) {
     console.error('Error updating request status:', error);
     return false;
+  }
+}
+
+/**
+ * Update status in all employee tabs with matching Request ID
+ */
+function updateEmployeeTabsStatus(requestId, newStatus) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet();
+    const allSheets = sheet.getSheets();
+    let updatedCount = 0;
+    
+    // Search all employee sheets (contain year pattern like "2025", "2026")
+    allSheets.forEach(employeeSheet => {
+      const sheetName = employeeSheet.getName();
+      
+      // Skip non-employee sheets
+      if (!sheetName.match(/202\d/)) {
+        return;
+      }
+      
+      const lastRow = employeeSheet.getLastRow();
+      if (lastRow < 10) return; // No data rows
+      
+      // Search for matching Request ID in employee tab
+      for (let row = 10; row <= lastRow; row++) {
+        try {
+          const cellRequestId = employeeSheet.getRange(row, 1).getValue();
+          
+          if (cellRequestId === requestId) {
+            // Update Status in column D (new template structure)
+            employeeSheet.getRange(row, 4).setValue(newStatus);
+            console.log(`Updated ${sheetName} row ${row}: ${requestId} → ${newStatus}`);
+            updatedCount++;
+          }
+        } catch (cellError) {
+          console.log(`Error reading row ${row} in ${sheetName}:`, cellError);
+        }
+      }
+    });
+    
+    return updatedCount;
+    
+  } catch (error) {
+    console.error('Error updating employee tabs:', error);
+    return 0;
   }
 }
